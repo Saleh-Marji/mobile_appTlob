@@ -20,6 +20,7 @@ import 'package:tlobni/ui/screens/widgets/blurred_dialoge_box.dart';
 import 'package:tlobni/ui/screens/widgets/full_screen_image_view.dart';
 import 'package:tlobni/ui/screens/widgets/gallery_view.dart';
 import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/ui/widgets/text/description_text.dart';
 import 'package:tlobni/utils/app_icon.dart';
 import 'package:tlobni/utils/constant.dart';
 import 'package:tlobni/utils/custom_text.dart';
@@ -29,6 +30,31 @@ import 'package:tlobni/utils/hive_utils.dart';
 import 'package:tlobni/utils/network_to_localsvg.dart';
 
 class UiUtils {
+  static String dateToAgoString(String? stringDate) {
+    DateTime? dateTime = stringDate != null ? DateTime.tryParse(stringDate) : null;
+    if (dateTime == null) return '';
+    final diff = DateTime.now().difference(dateTime);
+
+    if (diff.inMinutes < 1) {
+      return 'Just now';
+    } else if (diff.inHours < 1) {
+      return '${diff.inMinutes} minute${diff.inMinutes == 1 ? '' : 's'} ago';
+    } else if (diff.inDays < 1) {
+      return '${diff.inHours} hour${diff.inHours == 1 ? '' : 's'} ago';
+    } else if (diff.inDays < 7) {
+      return '${diff.inDays} day${diff.inDays == 1 ? '' : 's'} ago';
+    } else if (diff.inDays < 30) {
+      final weeks = (diff.inDays / 7).floor();
+      return '$weeks week${weeks == 1 ? '' : 's'} ago';
+    } else if (diff.inDays < 365) {
+      final months = (diff.inDays / 30).floor();
+      return '$months month${months == 1 ? '' : 's'} ago';
+    } else {
+      final years = (diff.inDays / 365).floor();
+      return '$years year${years == 1 ? '' : 's'} ago';
+    }
+  }
+
   static String categoriesListToString(List<CategoryModel> categories) {
     if (categories.isEmpty) return '';
     final first = categories.first;
@@ -192,17 +218,25 @@ class UiUtils {
     );
   }
 
-  static Widget progress({double? width, double? height, Color? normalProgressColor, bool? showWhite}) {
+  static Widget progress({double? width, double? height, Color? color, bool? showWhite}) {
     if (Constant.useLottieProgress) {
-      return LottieBuilder.asset(
-        "assets/lottie/${showWhite ?? false ? Constant.progressLottieFileWhite : Constant.loadingSuccessLottieFile}",
-        width: width ?? 70,
-        height: height ?? 70,
-        delegates: const LottieDelegates(values: []),
-      );
+      return Builder(builder: (context) {
+        return ColorFiltered(
+          colorFilter: ColorFilter.mode(
+            color ?? context.color.primary,
+            BlendMode.srcATop,
+          ),
+          child: LottieBuilder.asset(
+            "assets/lottie/${showWhite ?? false ? Constant.progressLottieFileWhite : Constant.loadingSuccessLottieFile}",
+            width: width ?? 70,
+            height: height ?? 70,
+            delegates: const LottieDelegates(values: []),
+          ),
+        );
+      });
     } else {
       return CircularProgressIndicator(
-        color: normalProgressColor,
+        color: color,
       );
     }
   }
@@ -292,7 +326,7 @@ class UiUtils {
                                 textDirection: Directionality.of(context),
                                 child: RotatedBox(
                                   quarterTurns: Directionality.of(context) == ui.TextDirection.rtl ? 2 : -4,
-                                  child: UiUtils.getSvg(AppIcons.arrowLeft, fit: BoxFit.none, color: context.color.textDefaultColor),
+                                  child: UiUtils.getSvg(AppIcons.arrowLeft, fit: BoxFit.none, color: context.color.primary),
                                 ),
                               ),
                             ),
@@ -300,13 +334,9 @@ class UiUtils {
                         ),
                       ],
                       Expanded(
-                        child: CustomText(
+                        child: DescriptionText(
                           title ?? "",
-                          overflow: TextOverflow.ellipsis,
-                          softWrap: true,
-                          color: context.color.textDefaultColor,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 18,
+                          weight: FontWeight.w600,
                         ),
                       ),
                       if (actions != null) ...actions,

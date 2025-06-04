@@ -1,9 +1,15 @@
 import 'package:tlobni/data/model/data_output.dart';
+import 'package:tlobni/data/model/item/item_model.dart';
 import 'package:tlobni/data/model/item_filter_model.dart';
 import 'package:tlobni/data/model/user_model.dart';
 import 'package:tlobni/utils/api.dart';
 
 class UserRepository {
+  Future<User> fetchProvider(int id) async {
+    Map<String, dynamic> response = (await Api.get(url: Api.getProvider, queryParameters: {'id': id}));
+    return User.fromJson(response['data']);
+  }
+
   Future<DataOutput<UserModel>> fetchProviders(String query, ItemFilterModel? filter, {required int page}) async {
     Map<String, dynamic> parameters = {
       'page': page,
@@ -47,6 +53,14 @@ class UserRepository {
       }
       if (filter.maxRating != null) {
         parameters['rating_to'] = filter.maxRating;
+      }
+
+      if (filter.featuredOnly != null) {
+        parameters['featured_only'] = filter.featuredOnly;
+      }
+
+      if (filter.providerSortBy != null) {
+        parameters['sort_by'] = filter.providerSortBy?.jsonName;
       }
     }
 
