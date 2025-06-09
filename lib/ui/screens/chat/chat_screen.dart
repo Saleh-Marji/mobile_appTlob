@@ -468,6 +468,7 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                                                     textInputAction: TextInputAction.newline,
                                                     minLines: 1,
                                                     maxLines: null,
+                                                    style: context.textTheme.bodyMedium,
                                                     decoration: InputDecoration(
                                                       suffixIconColor: context.color.textLightColor,
                                                       suffixIcon: IconButton(

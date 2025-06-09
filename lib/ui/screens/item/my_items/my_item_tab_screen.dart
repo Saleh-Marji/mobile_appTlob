@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:tlobni/data/cubits/item/fetch_my_item_cubit.dart';
 import 'package:tlobni/data/helper/designs.dart';
 import 'package:tlobni/data/model/item/item_model.dart';
-import 'package:tlobni/ui/screens/home/home_screen.dart';
 import 'package:tlobni/ui/screens/item/my_items/my_listings_item_container.dart';
 import 'package:tlobni/ui/screens/widgets/errors/no_data_found.dart';
 import 'package:tlobni/ui/screens/widgets/errors/no_internet.dart';
@@ -257,7 +256,7 @@ class _MyItemTabState extends CloudState<MyItemTab> {
                     physics: AlwaysScrollableScrollPhysics(),
                     controller: _pageScrollController,
                     padding: const EdgeInsets.symmetric(
-                      horizontal: sidePadding,
+                      horizontal: 16,
                       vertical: 8,
                     ),
                     separatorBuilder: (context, index) {

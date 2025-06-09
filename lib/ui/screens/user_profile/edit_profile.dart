@@ -255,6 +255,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
           border: Border.all(color: Color(0xffede9e5)),
           borderRadius: BorderRadius.circular(10),
         ),
+        padding: EdgeInsets.all(16),
         child: _tabContent(),
       );
 
@@ -1106,7 +1107,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
       validateNonEmptyField('location', text: city);
       if (_type != UserType.client) {
         validateNonEmptyField('phone number', controller: phoneController);
-        validateNonEmptyField('bio', controller: bioController);
+        // validateNonEmptyField('bio', controller: bioController);
         if (_selectedCategoryIds.isEmpty) {
           throw 'Kindly select at least one category';
         }

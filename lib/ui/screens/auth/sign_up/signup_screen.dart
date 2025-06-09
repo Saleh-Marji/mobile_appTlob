@@ -108,9 +108,9 @@ class _SignupScreenState extends CloudState<SignupScreen> {
   // Track expanded subcategories
   final Set<int> _expandedSubcategories = {};
 
-  Widget get _locationWidget => LocationAutocomplete(
+  Widget _locationWidget(bool required) => LocationAutocomplete(
         controller: _locationController,
-        hintText: "Location".translate(context),
+        hintText: "Location${required ? ' *' : ''}".translate(context),
         onSelected: (String location) {
           // Basic handling when only the string is returned
         },
@@ -645,7 +645,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
           borderColor: context.color.borderColor.darken(50),
         ),
         const SizedBox(height: 14),
-        _locationWidget,
+        _locationWidget(true),
         const SizedBox(height: 14),
 
         // Categories (multiple selection)
@@ -680,7 +680,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
           borderColor: context.color.borderColor.darken(50),
         ),
         const SizedBox(height: 14),
-        _locationWidget,
+        _locationWidget(true),
         const SizedBox(height: 14),
 
         // Categories
@@ -745,7 +745,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
           borderColor: context.color.borderColor.darken(50),
         ),
         const SizedBox(height: 14),
-        _locationWidget,
+        _locationWidget(false),
       ],
     );
   }
