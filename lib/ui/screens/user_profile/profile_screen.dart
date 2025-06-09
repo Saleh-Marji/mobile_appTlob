@@ -879,7 +879,7 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
                                                   ),
                                                   child: CustomText(
                                                     sellerStatus((state).data.status!),
-                                                    color: context.color.secondaryColor,
+                                                    color: context.color.secondary,
                                                     fontSize: context.font.small,
                                                     fontWeight: FontWeight.w500,
                                                   ))),
@@ -897,7 +897,7 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
                                                 ),
                                                 child: CustomText(
                                                   "resubmit".translate(context),
-                                                  color: context.color.secondaryColor,
+                                                  color: context.color.secondary,
                                                   fontSize: context.font.small,
                                                   fontWeight: FontWeight.w500,
                                                 ),

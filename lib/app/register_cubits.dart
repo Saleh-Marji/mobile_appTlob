@@ -70,6 +70,7 @@ import 'package:tlobni/data/cubits/system/get_api_keys_cubit.dart';
 import 'package:tlobni/data/cubits/system/language_cubit.dart';
 import 'package:tlobni/data/cubits/system/notification_cubit.dart';
 import 'package:tlobni/data/cubits/system/user_details.dart';
+import 'package:tlobni/data/cubits/user/current_user_profile_cubit.dart';
 import 'package:tlobni/data/cubits/user_has_rated_item_cubit.dart';
 import 'package:tlobni/data/cubits/user_has_rated_user_cubit.dart';
 import 'package:tlobni/data/cubits/utility/item_edit_global.dart';
@@ -94,6 +95,7 @@ class RegisterCubits {
     BlocProvider(create: (context) => FetchBlogsCubit()),
     BlocProvider(create: (context) => FetchMyItemsCubit()),
     BlocProvider(create: (context) => FetchSystemSettingsCubit()),
+    BlocProvider(create: (context) => CurrentUserProfileCubit()),
     BlocProvider(create: (context) => UserDetailsCubit()),
     BlocProvider(create: (context) => FetchLanguageCubit()),
     BlocProvider(create: (context) => FetchMyPromotedItemsCubit()),

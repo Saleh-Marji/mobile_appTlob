@@ -57,7 +57,7 @@ class SearchScreen extends StatefulWidget {
 
     // Extract the filter if it's passed in the arguments
     ItemFilterModel? itemFilter =
-        arguments != null && arguments.containsKey('itemFilter') ? arguments['itemFilter'] as ItemFilterModel : null;
+        arguments != null && arguments.containsKey('itemFilter') ? arguments['itemFilter'] as ItemFilterModel? : null;
 
     SearchScreenType? screenType = arguments?['screenType'];
 

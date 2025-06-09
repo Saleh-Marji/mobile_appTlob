@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:tlobni/app/app_theme.dart';
 import 'package:tlobni/ui/screens/widgets/side_colored_border_container.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
+import 'package:tlobni/utils/ui_utils.dart';
 
 class ItemPricingContainer extends StatelessWidget {
   const ItemPricingContainer({
@@ -35,7 +36,7 @@ class ItemPricingContainer extends StatelessWidget {
             children: [
               TextSpan(text: '/'),
               WidgetSpan(child: SizedBox(width: 2)),
-              TextSpan(text: priceType),
+              TextSpan(text: UiUtils.formatPriceType(priceType)),
             ],
             style: context.textTheme.bodySmall?.copyWith(
               color: Colors.grey.shade700,

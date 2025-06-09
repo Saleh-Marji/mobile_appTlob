@@ -540,10 +540,50 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                 ],
               ),
             ),
+          if (model.isForACause) _forACause(),
           _divider(),
           _aboutTheProvider(),
         ],
       );
+
+  Widget _forACause() {
+    final greenColor = Color(0xff2d8959);
+    return Container(
+      decoration: BoxDecoration(
+        color: Color(0xffe5efea),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      padding: EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        spacing: 10,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            spacing: 6,
+            children: [
+              Icon(
+                Icons.favorite,
+                color: greenColor,
+                size: 20,
+              ),
+              Expanded(
+                child: HeadingText(
+                  'For a Cause',
+                  color: greenColor,
+                  fontSize: 17,
+                ),
+              ),
+            ],
+          ),
+          SmallText(
+            model.forACauseText ?? '',
+            color: greenColor,
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _aboutTheProvider() => model.user == null
       ? SizedBox()
@@ -587,40 +627,45 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
           ),
         );
 
-  Widget _limitedTimeExperience() => _elevatedContainer(
-        child: Padding(
-          padding: EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.event, color: context.color.secondary),
-                  SizedBox(width: 10),
-                  Expanded(child: HeadingText('Limited Time Experience', fontSize: 18)),
-                ],
-              ),
-              SizedBox(height: 10),
-              _divider(),
-              SizedBox(height: 10),
-              Column(
-                spacing: 12,
-                children: [
-                  _limitedExperienceItem(
-                    Icons.event_busy,
-                    'End Date',
-                    _formatExperienceDateTime(model.expirationDate),
-                  ),
+  Widget _limitedTimeExperience() {
+    final isExpired = model.expirationDate?.difference(DateTime.now()).isNegative;
+    if (isExpired == null) return SizedBox();
+    return _elevatedContainer(
+      child: Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Icon(Icons.event, color: isExpired ? Colors.red : context.color.secondary),
+                SizedBox(width: 10),
+                Expanded(child: HeadingText(isExpired ? 'This experience has expired' : 'Limited Time Experience', fontSize: 18)),
+              ],
+            ),
+            SizedBox(height: 10),
+            _divider(),
+            SizedBox(height: 10),
+            Column(
+              spacing: 12,
+              children: [
+                _limitedExperienceItem(
+                  Icons.event_busy,
+                  'End Date',
+                  _formatExperienceDateTime(model.expirationDate),
+                ),
+                if (!isExpired)
                   _limitedExperienceItem(
                     Icons.hourglass_bottom,
                     'Countdown',
                     '${model.expirationDate?.difference(DateTime.now()).abs().inDays} days left',
                   )
-                ],
-              )
-            ],
-          ),
+              ],
+            )
+          ],
         ),
-      );
+      ),
+    );
+  }
 
   Widget _limitedExperienceItem(IconData icon, String title, String content) => Row(
         children: [

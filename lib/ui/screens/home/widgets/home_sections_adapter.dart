@@ -293,7 +293,7 @@ class _ItemCardState extends State<ItemCard> {
                                     SizedBox(width: 4),
                                     Flexible(
                                       child: CustomText(
-                                        "/ ${_formatPriceType(widget.item?.priceType)}",
+                                        "/ ${UiUtils.formatPriceType(widget.item?.priceType)}",
                                         fontSize: context.font.small,
                                         color: context.color.textLightColor,
                                         maxLines: 1,
@@ -414,24 +414,5 @@ class _ItemCardState extends State<ItemCard> {
                     );
                   });
             }));
-  }
-
-  String _formatPriceType(String? priceType) {
-    if (priceType == null) return "";
-
-    switch (priceType) {
-      case "session":
-        return "session";
-      case "consultation":
-        return "consultation";
-      case "hour":
-        return "hour";
-      case "class":
-        return "class";
-      case "fixed_fee":
-        return "fixed fee";
-      default:
-        return priceType;
-    }
   }
 }

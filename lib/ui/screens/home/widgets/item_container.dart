@@ -40,6 +40,7 @@ class ItemContainer extends StatelessWidget {
     final tags = [
       if (item.expirationDate != null) _daysLeftUntilExpiryString(item.expirationDate),
       // ...[
+      if (item.isForACause) 'For a Cause',
       if (item.isWomenExclusive) 'Women only',
       if (item.isCorporatePackage) 'Corporate',
       // ],
@@ -123,7 +124,8 @@ class ItemContainer extends StatelessWidget {
               right: 10,
               top: 10,
               child: Column(
-                children: tags.map(_tagContainer).spaceBetween(10).toList(),
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: tags.map((e) => e is Widget ? e : _primaryTagContainer(e.toString())).spaceBetween(10).toList(),
               ),
             )
         ],
@@ -131,18 +133,22 @@ class ItemContainer extends StatelessWidget {
     );
   }
 
-  Widget _tagContainer(String tag) => Builder(builder: (context) {
+  Widget _primaryTagContainer(String tag) => Builder(builder: (context) {
+        return _itemTagContainer(context.color.onPrimary, context.color.primary, tag);
+      });
+
+  Widget _itemTagContainer(Color textColor, Color backgroundColor, String tag) => Builder(builder: (context) {
         return Container(
           padding: EdgeInsets.all(small ? 7 : 10),
           decoration: BoxDecoration(
-            border: Border.all(color: context.color.onPrimary),
+            border: Border.all(color: textColor),
             borderRadius: BorderRadius.circular(8),
-            color: context.color.primary,
+            color: backgroundColor,
           ),
           child: Text(
             tag,
             style: context.textTheme.bodySmall?.copyWith(
-              color: context.color.onPrimary,
+              color: textColor,
               fontSize: small ? 11 : 13,
             ),
           ),
@@ -237,9 +243,12 @@ class ItemContainer extends StatelessWidget {
         ],
       );
 
-  String? _daysLeftUntilExpiryString(DateTime? expirationDate) {
+  dynamic _daysLeftUntilExpiryString(DateTime? expirationDate) {
     if (expirationDate == null) return null;
-    final diff = expirationDate.difference(DateTime.now()).abs();
+    final diff = expirationDate.difference(DateTime.now());
+    if (diff.isNegative) {
+      return _itemTagContainer(Colors.red.shade800, Color.lerp(Colors.red.shade50, Colors.white, 0.5)!, 'Expired');
+    }
     return '${max(0, diff.inDays)} Days Left';
   }
 
@@ -266,7 +275,7 @@ class ItemContainer extends StatelessWidget {
         );
       });
 
-  Widget _typeTagContainer() => _tagContainer(switch (item.type) {
+  Widget _typeTagContainer() => _primaryTagContainer(switch (item.type) {
         'service' => 'Service',
         'experience' => 'Experience',
         _ => '',

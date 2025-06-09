@@ -1,48 +1,54 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:tlobni/data/model/item/item_model.dart';
+import 'package:tlobni/data/repositories/user/user_repository.dart';
 import 'package:tlobni/utils/api.dart';
 import 'package:tlobni/utils/hive_utils.dart';
 
-abstract class AuthState {}
+abstract class CurrentUserProfileState {}
 
-class AuthInitial extends AuthState {}
+class CurrentUserProfileInitial extends CurrentUserProfileState {}
 
-class AuthProgress extends AuthState {}
+class CurrentUserProfileFetchProgress extends CurrentUserProfileState {}
 
-class Unauthenticated extends AuthState {}
+class CurrentUserProfileProgress extends CurrentUserProfileState {}
 
-class Authenticated extends AuthState {
-  bool isAuthenticated = false;
+class CurrentUserProfileSuccess extends CurrentUserProfileState {
+  User user;
 
-  Authenticated(this.isAuthenticated);
+  CurrentUserProfileSuccess({required this.user});
 }
 
-class AuthFailure extends AuthState {
+class CurrentUserProfileFailure extends CurrentUserProfileState {
   final String errorMessage;
 
-  AuthFailure(this.errorMessage);
+  CurrentUserProfileFailure(this.errorMessage);
 }
 
-class AuthCubit extends Cubit<AuthState> {
-  //late String name, email, profile, address;
-  AuthCubit() : super(AuthInitial()) {
-    // checkIsAuthenticated();
-  }
+class CurrentUserProfileCubit extends Cubit<CurrentUserProfileState> {
+  CurrentUserProfileCubit() : super(CurrentUserProfileInitial());
 
-  void checkIsAuthenticated() {
-    if (HiveUtils.isUserAuthenticated()) {
-      //setUserData();
-      emit(Authenticated(true));
-    } else {
-      emit(Unauthenticated());
+  final UserRepository _userRepository = UserRepository();
+
+  Future<void> fetchCurrentUser() async {
+    if (state is CurrentUserProfileFetchProgress) return;
+    try {
+      String? userId = HiveUtils.getUserId();
+      if (userId == null) throw 'User not logged in';
+      emit(CurrentUserProfileFetchProgress());
+      User result = await _userRepository.fetchProvider(int.parse(userId));
+
+      emit(CurrentUserProfileSuccess(user: result));
+    } catch (e, s) {
+      print(e.toString());
+      print(s);
+      emit(CurrentUserProfileFailure(e.toString()));
     }
   }
 
-  Future<Map<String, dynamic>> updateuserdata(
-    BuildContext context, {
+  Future<void> updateUserProfile({
     String? name,
     String? email,
     File? fileUserimg,
@@ -62,6 +68,7 @@ class AuthCubit extends Cubit<AuthState> {
     String? gender,
     int? personalDetail,
   }) async {
+    emit(CurrentUserProfileFetchProgress());
     Map<String, dynamic> parameters = {
       Api.name: name ?? '',
       Api.email: email ?? '',
@@ -93,16 +100,11 @@ class AuthCubit extends Cubit<AuthState> {
         //checkIsAuthenticated();
       }
 
-      return response;
-    } catch (e) {
-      rethrow;
-    }
-  }
-
-  void signOut(BuildContext context) async {
-    if ((state as Authenticated).isAuthenticated) {
-      HiveUtils.logoutUser(context, onLogout: () {});
-      emit(Unauthenticated());
+      emit(CurrentUserProfileSuccess(user: User.fromJson(response['data'])));
+    } catch (e, s) {
+      print(e.toString());
+      print(s);
+      emit(CurrentUserProfileFailure(e.toString()));
     }
   }
 }

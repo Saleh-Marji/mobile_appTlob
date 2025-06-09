@@ -3,13 +3,13 @@ import 'dart:io';
 
 import 'package:dotted_border/dotted_border.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart' as path_provider;
+import 'package:tlobni/app/app_theme.dart';
 import 'package:tlobni/app/routes.dart';
 import 'package:tlobni/data/cubits/category/fetch_all_categories_cubit.dart';
 import 'package:tlobni/data/cubits/custom_field/fetch_custom_fields_cubit.dart';
@@ -24,18 +24,16 @@ import 'package:tlobni/ui/screens/item/add_item_screen/widgets/location_autocomp
 import 'package:tlobni/ui/screens/item/my_items/my_item_tab_screen.dart';
 import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
 import 'package:tlobni/ui/screens/widgets/blurred_dialoge_box.dart';
-import 'package:tlobni/ui/screens/widgets/custom_text_form_field.dart';
 import 'package:tlobni/ui/screens/widgets/dynamic_field.dart';
 import 'package:tlobni/ui/theme/theme.dart';
 import 'package:tlobni/ui/widgets/buttons/primary_button.dart';
 import 'package:tlobni/ui/widgets/buttons/regular_button.dart';
 import 'package:tlobni/ui/widgets/buttons/unelevated_regular_button.dart';
-import 'package:tlobni/ui/widgets/miscellanious/dropdown.dart';
+import 'package:tlobni/ui/widgets/dropdown/form_dropdown.dart';
 import 'package:tlobni/ui/widgets/text/description_text.dart';
 import 'package:tlobni/ui/widgets/text/heading_text.dart';
 import 'package:tlobni/ui/widgets/text/small_text.dart';
 import 'package:tlobni/utils/cloud_state/cloud_state.dart';
-import 'package:tlobni/utils/constant.dart';
 import 'package:tlobni/utils/custom_text.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/extensions/lib/iterable_iterable.dart';
@@ -125,11 +123,13 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
   AddressComponent? formatedAddress;
   bool _isSubmitting = false; // Add loading state for submit button
   CategoryModel? _selectedCategory;
+  bool forACause = false;
 
   // Add missing controllers
   final TextEditingController cityTextController = TextEditingController();
   final TextEditingController stateTextController = TextEditingController();
   final TextEditingController countryTextController = TextEditingController();
+  final TextEditingController forACauseTextController = TextEditingController();
 
   // Location autocomplete
   final TextEditingController locationController = TextEditingController();
@@ -169,115 +169,6 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
     _formKey = GlobalKey<FormState>();
     _initFields(widget.item);
     _onRefresh();
-    // AbstractField.fieldsData.clear();
-    // AbstractField.files.clear();
-    //
-    // // Check if post_type is set and valid
-    // dynamic rawPostType = getCloudData("post_type");
-    // if (rawPostType == null || !(rawPostType is PostType)) {
-    //   // Set a default post type if none is set
-    //   addCloudData("post_type", PostType.service);
-    // }
-    //
-    // if (widget.isEdit == true) {
-    //   item = getCloudData('edit_request') as ItemModel;
-    //
-    //   // Debug the item's location details
-    //   _debugItemLocationDetails();
-    //
-    //   clearCloudData("item_details");
-    //   clearCloudData("with_more_details");
-    //   context.read<FetchCustomFieldsCubit>().fetchCustomFields(
-    //         categoryIds: item?.allCategoryIds ?? "",
-    //       );
-    //   adTitleController.text = item?.name ?? "";
-    //   adDescriptionController.text = item?.description ?? "";
-    //   adPriceController.text = item?.price.toString() ?? "";
-    //   adPhoneNumberController.text = item?.contact ?? "";
-    //   adAdditionalDetailsController.text = item?.videoLink ?? "";
-    //   titleImageURL = item?.image ?? "";
-    //
-    //   // Set the price type if it exists
-    //   if (item?.priceType != null && item!.priceType!.isNotEmpty) {
-    //     _priceType = item!.priceType;
-    //   }
-    //
-    //   // Set the formatted address for location
-    //   if (item != null) {
-    //     formatedAddress = AddressComponent(
-    //         area: item!.area,
-    //         areaId: item!.areaId,
-    //         city: item!.city,
-    //         country: item!.country,
-    //         state: item!.state,
-    //         mixed: "${item!.city}, ${item!.country}");
-    //
-    //     // Set location controller text - prioritize showing city and country
-    //     // Build location text prioritizing city and country
-    //     String cityCountry = "";
-    //     if ((item!.city != null && item!.city!.isNotEmpty) && (item!.country != null && item!.country!.isNotEmpty)) {
-    //       cityCountry = "${item!.city}, ${item!.country}";
-    //     }
-    //
-    //     // If we have city,country - use that, otherwise try other combinations
-    //     if (cityCountry.isNotEmpty) {
-    //       locationController.text = cityCountry;
-    //     } else {
-    //       // Fallback to combining all location parts
-    //       String locationText =
-    //           [item!.area, item!.city, item!.state, item!.country].where((part) => part != null && part.isNotEmpty).join(', ');
-    //
-    //       if (locationText.isNotEmpty) {
-    //         locationController.text = locationText;
-    //       }
-    //     }
-    //
-    //     print("Location set to: ${locationController.text}");
-    //   }
-    //
-    //   // Load special tags if they exist
-    //   if (item?.specialTags != null) {
-    //     try {
-    //       print("Loading special tags: ${item!.specialTags}");
-    //
-    //       if (item!.specialTags!.containsKey('exclusive_women')) {
-    //         // Handle both boolean and string values
-    //         var value = item!.specialTags!['exclusive_women'];
-    //         _specialTags['exclusive_women'] = (value == true) || (value == "true") || (value.toString().toLowerCase() == "true");
-    //       }
-    //
-    //       if (item!.specialTags!.containsKey('corporate_package')) {
-    //         // Handle both boolean and string values
-    //         var value = item!.specialTags!['corporate_package'];
-    //         _specialTags['corporate_package'] = (value == true) || (value == "true") || (value.toString().toLowerCase() == "true");
-    //       }
-    //     } catch (e) {
-    //       print("Error loading special tags: $e");
-    //     }
-    //   }
-    //
-    //   // Load service location options
-    //   if (item?.locationType != null) {
-    //     List<String> locationTypes = item!.locationType ?? [];
-    //
-    //     _atClientLocation = locationTypes.contains('client_location');
-    //     _atPublicVenue = locationTypes.contains('public_venue');
-    //     _atMyLocation = locationTypes.contains('my_location');
-    //     _isVirtual = locationTypes.contains('virtual');
-    //   }
-    //
-    //   List<String?>? list = item?.galleryImages?.map((e) => e.image).toList();
-    //   mixedItemImageList.addAll([...list ?? []]);
-    //
-    //   setState(() {});
-    // } else {
-    //   List<int> ids = widget.breadCrumbItems!.map((item) => item.id!).toList();
-    //
-    //   context.read<FetchCustomFieldsCubit>().fetchCustomFields(categoryIds: ids.join(','));
-    //   selectedCategoryList = ids;
-    //   adPhoneNumberController.text = HiveUtils.getUserDetails().mobile ?? "";
-    // }
-    //
     _pickTitleImage.listener((p0) {
       titleImageURL = "";
       WidgetsBinding.instance.addPersistentFrameCallback((timeStamp) {
@@ -295,20 +186,6 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
   }
 
   bool get isEdit => widget.isEdit == true;
-
-  void _debugItemLocationDetails() {
-    if (widget.isEdit == true && item != null) {
-      print("=== DEBUG ITEM LOCATION DETAILS ===");
-      print("Item ID: ${item!.id}");
-      print("City: ${item!.city}");
-      print("Country: ${item!.country}");
-      print("State: ${item!.state}");
-      print("Area: ${item!.area}");
-      print("Area ID: ${item!.areaId}");
-      print("All Location Data: ${item!.toJson()}");
-      print("=================================");
-    }
-  }
 
   Widget _section({required String title, required List<Widget> children}) => Container(
         padding: EdgeInsets.all(20),
@@ -388,55 +265,6 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
     });
   }
 
-  Widget _menu<T>({
-    List<(T, String)>? items,
-    List<DropdownMenuEntry<T>>? entries,
-    bool allowSearch = false,
-    String? hint,
-    required T? selectedValue,
-    required bool? Function(T? value) onSelected,
-  }) {
-    assert(items != null || entries != null);
-    return MyDropdownMenu<T>(
-      expandFormField: false,
-      selectedValue: selectedValue,
-      onSelected: onSelected,
-      trailingIcon: SizedBox(),
-      textStyle: context.textTheme.bodyMedium,
-      takeSelectedValue: true,
-      requestFocusOnTap: allowSearch,
-      enableSearch: allowSearch,
-      hintText: hint,
-      enableFilter: allowSearch,
-      inputDecorationTheme: InputDecorationTheme(
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: _greyBorderColor),
-        ),
-        contentPadding: EdgeInsets.all(13),
-      ),
-      menuStyle: MenuStyle(
-        maximumSize: WidgetStatePropertyAll(Size(double.infinity, 500)),
-        minimumSize: WidgetStatePropertyAll(Size(double.infinity, 500)),
-        side: WidgetStatePropertyAll(BorderSide(color: _greyBorderColor)),
-        shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
-      ),
-      dropdownMenuEntries: items
-              ?.map((e) => DropdownMenuEntry(
-                    value: e.$1,
-                    label: e.$2,
-                    style: ButtonStyle(
-                      padding: WidgetStatePropertyAll(
-                        EdgeInsets.all(10),
-                      ),
-                    ),
-                  ))
-              .toList() ??
-          entries ??
-          [],
-    );
-  }
-
   Widget _serviceTitle() {
     return _field(
       label: '${widget.postType.toString()} Title',
@@ -465,7 +293,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
           if (state is FetchAllCategoriesInProgress) return UiUtils.progress();
           if (state is FetchAllCategoriesFailure) return DescriptionText(state.errorMessage);
           if (state is! FetchAllCategoriesSuccess) return SizedBox();
-          return _menu(
+          return FormDropdown(
             hint: 'Select Category',
             allowSearch: true,
             entries: state.categories
@@ -518,7 +346,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
 
   Widget _priceTypeDropdown() => _field(
         label: 'Price Type',
-        child: _menu(
+        child: FormDropdown(
           hint: 'Select type',
           items: [
             ("session", "Session"),
@@ -632,17 +460,19 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
         ),
       );
 
-  Widget _specialTagField(String specialTag) {
+  Widget _specialTagField(String specialTag) => _switchField(_specialTags[specialTag] == true, (val) => _specialTags[specialTag] = val);
+
+  Widget _switchField(bool value, ValueChanged<bool> onChanged) {
     return Row(
       children: [
         Switch(
-          value: _specialTags[specialTag] == true,
+          value: value,
           onChanged: (value) {
-            setState(() => _specialTags[specialTag] = value);
+            setState(() => onChanged(value));
           },
         ),
         SizedBox(width: 5),
-        Expanded(child: DescriptionText(_specialTags[specialTag] == true ? 'Yes' : 'No')),
+        Expanded(child: DescriptionText(value ? 'Yes' : 'No')),
       ],
     );
   }
@@ -659,12 +489,32 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
         child: _specialTagField('corporate_package'),
       );
 
+  Widget _forACause() => _field(
+        label: 'Philanthropic Event',
+        required: null,
+        child: _switchField(forACause, (val) => forACause = val),
+      );
+
+  Widget _forACauseText() => _field(
+        label: 'Philanthropic Description',
+        child: _customTextField(
+          borderColor: kColorSecondaryBeige,
+          maxLines: 4,
+          hint: 'Describe the philanthropic aspects of this experience',
+          controller: forACauseTextController,
+        ),
+      );
+
   Widget _itemDetails() => _section(
         title: '${widget.postType.toString()} Details',
         children: [
           if (widget.postType == PostType.experience) _endDateAndTime() else _serviceLocation(),
           _exclusiveForWomen(),
           _corporatePackage(),
+          if (widget.postType == PostType.experience) ...[
+            _forACause(),
+            if (forACause) _forACauseText(),
+          ]
         ],
       );
 
@@ -770,240 +620,6 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
             ),
           ),
         );
-
-        return AnnotatedRegion(
-          value: UiUtils.getSystemUiOverlayStyle(context: context, statusBarColor: context.color.secondaryColor),
-          child: PopScope(
-            canPop: true,
-            onPopInvokedWithResult: (didPop, result) {
-              return;
-            },
-            child: SafeArea(
-              child: Scaffold(
-                appBar: UiUtils.buildAppBar(context, showBackButton: true, title: "AdDetails".translate(context)),
-                bottomNavigationBar: Container(
-                  color: Colors.transparent,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                    child: UiUtils.buildButton(context,
-                        onPressed: _onSubmitPressed,
-                        height: 48,
-                        fontSize: context.font.large,
-                        autoWidth: false,
-                        radius: 8,
-                        disabledColor: const Color.fromARGB(255, 104, 102, 106),
-                        disabled: false,
-                        isInProgress: _isSubmitting,
-                        width: double.maxFinite,
-                        buttonTitle: widget.isEdit == true ? "Update Post".translate(context) : "postNow".translate(context),
-                        textColor: const Color(0xFFE6CBA8)),
-                  ),
-                ),
-                body: Form(
-                  key: _formKey,
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    child: Padding(
-                      padding: const EdgeInsets.all(18.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          CustomText(
-                            "youAreAlmostThere".translate(context),
-                            fontSize: context.font.large,
-                            fontWeight: FontWeight.w600,
-                            color: context.color.textColorDark,
-                          ),
-                          SizedBox(
-                            height: 16,
-                          ),
-                          if (widget.breadCrumbItems != null)
-                            SizedBox(
-                              height: 20,
-                              width: context.screenWidth,
-                              child: SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: ListView.builder(
-                                    shrinkWrap: true,
-                                    scrollDirection: Axis.horizontal,
-                                    physics: const NeverScrollableScrollPhysics(),
-                                    itemBuilder: (context, index) {
-                                      bool isNotLast = (widget.breadCrumbItems!.length - 1) != index;
-
-                                      return Row(
-                                        children: [
-                                          InkWell(
-                                              onTap: () {
-                                                _onBreadCrumbItemTap(index);
-                                              },
-                                              child: CustomText(
-                                                widget.breadCrumbItems![index].name!,
-                                                color: isNotLast ? context.color.textColorDark : context.color.territoryColor,
-                                                firstUpperCaseWidget: true,
-                                              )),
-                                          if (index < widget.breadCrumbItems!.length - 1)
-                                            CustomText(" > ", color: context.color.territoryColor),
-                                        ],
-                                      );
-                                    },
-                                    itemCount: widget.breadCrumbItems!.length),
-                              ),
-                            ),
-                          SizedBox(
-                            height: 18,
-                          ),
-                          CustomText("adTitle".translate(context) + " *"),
-                          SizedBox(
-                            height: 10,
-                          ),
-                          CustomTextFormField(
-                            controller: _titleController,
-                            validator: CustomTextFieldValidator.nullCheck,
-                            action: TextInputAction.next,
-                            capitalization: TextCapitalization.sentences,
-                            hintText: "adTitleHere".translate(context),
-                            hintTextStyle: TextStyle(color: context.color.textDefaultColor.withOpacity(0.3), fontSize: context.font.large),
-                          ),
-                          SizedBox(
-                            height: 15,
-                          ),
-                          CustomText("descriptionLbl".translate(context) + " *"),
-                          SizedBox(
-                            height: 15,
-                          ),
-                          CustomTextFormField(
-                            controller: _descriptionController,
-                            action: TextInputAction.newline,
-                            validator: CustomTextFieldValidator.nullCheck,
-                            capitalization: TextCapitalization.sentences,
-                            hintText: "writeSomething".translate(context),
-                            maxLine: 100,
-                            minLine: 6,
-                            hintTextStyle: TextStyle(color: context.color.textDefaultColor.withOpacity(0.3), fontSize: context.font.large),
-                          ),
-                          SizedBox(
-                            height: 15,
-                          ),
-
-                          // Special Tags Section - Changed to use switches
-                          _buildSpecialTagsSection(context),
-
-                          // Price Type Section (for both Service and Experience)
-                          _buildPriceTypeSection(context),
-
-                          // Service Location Options
-                          _buildServiceLocationOptions(context),
-
-                          // Experience Location
-                          _buildExperienceLocationSection(context),
-
-                          // Auto-Expiration Date & Time (for Experience only)
-                          _buildExpirationDateTimeSection(context),
-
-                          Row(
-                            children: [
-                              CustomText("mainPicture".translate(context) + " *"),
-                              const SizedBox(
-                                width: 3,
-                              ),
-                              CustomText(
-                                "maxSize".translate(context),
-                                fontStyle: FontStyle.italic,
-                                fontSize: context.font.small,
-                              )
-                            ],
-                          ),
-                          SizedBox(
-                            height: 10,
-                          ),
-                          Wrap(
-                            children: [
-                              if (_pickTitleImage.pickedFile != null) ...[] else ...[],
-                              titleImageListener(),
-                            ],
-                          ),
-                          SizedBox(
-                            height: 10,
-                          ),
-                          Row(
-                            children: [
-                              CustomText("otherPictures".translate(context) + " (optional)"),
-                              const SizedBox(
-                                width: 3,
-                              ),
-                              CustomText(
-                                "max5Images".translate(context),
-                                fontStyle: FontStyle.italic,
-                                fontSize: context.font.small,
-                              )
-                            ],
-                          ),
-                          SizedBox(
-                            height: 10,
-                          ),
-                          itemImagesListener(),
-                          SizedBox(
-                            height: 10,
-                          ),
-                          CustomText("price".translate(context) + " *"),
-                          SizedBox(
-                            height: 10,
-                          ),
-                          CustomTextFormField(
-                            controller: adPriceController,
-                            action: TextInputAction.next,
-                            prefix: CustomText("${Constant.currencySymbol} "),
-                            formaters: [
-                              FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d*')),
-                            ],
-                            keyboard: TextInputType.number,
-                            validator: CustomTextFieldValidator.nullCheck,
-                            hintText: "00",
-                            hintTextStyle: TextStyle(color: context.color.textDefaultColor.withOpacity(0.3), fontSize: context.font.large),
-                          ),
-                          SizedBox(
-                            height: 10,
-                          ),
-                          CustomText("phoneNumber".translate(context) + " (optional)"),
-                          SizedBox(
-                            height: 10,
-                          ),
-                          CustomTextFormField(
-                            controller: adPhoneNumberController,
-                            action: TextInputAction.next,
-                            formaters: [
-                              FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d*')),
-                            ],
-                            keyboard: TextInputType.phone,
-                            validator: CustomTextFieldValidator.phoneNumber,
-                            hintText: "9876543210",
-                            hintTextStyle: TextStyle(color: context.color.textDefaultColor.withOpacity(0.3), fontSize: context.font.large),
-                          ),
-                          SizedBox(
-                            height: 10,
-                          ),
-                          CustomText("videoLink".translate(context) + " (optional)"),
-                          SizedBox(
-                            height: 10,
-                          ),
-                          CustomTextFormField(
-                            controller: _videoLinkController,
-                            validator: null, // Use null validator (no validation at form level)
-                            hintText: "http://example.com/video.mp4",
-                            hintTextStyle: TextStyle(color: context.color.textDefaultColor.withOpacity(0.3), fontSize: context.font.large),
-                          ),
-                          SizedBox(
-                            height: 15,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
       },
     );
   }
@@ -1075,6 +691,10 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
         cloudData['description'] = _descriptionController.text;
         cloudData['price'] = adPriceController.text;
         cloudData['contact'] = adPhoneNumberController.text;
+
+        if (widget.postType == PostType.experience) {
+          cloudData['for_a_cause_text'] = forACause ? forACauseTextController.text : null;
+        }
 
         // Handle the video link - validate URL format or set to empty
         String videoLink = _videoLinkController.text.trim();
@@ -1327,7 +947,8 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
       }
 
       // Show success message
-      HelperUtils.showSnackBarMessage(context, widget.isEdit == true ? "Item updated successfully" : "Data submitted");
+      HelperUtils.showSnackBarMessage(context,
+          widget.isEdit == true ? "Item updated successfully" : "Your listing is under review — we'll notify you once it's approved!");
 
       // Navigate based on edit or new item
       if (widget.isEdit == true) {
@@ -2323,6 +1944,12 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
     // In edit mode, we may have already retrieved the location from the item
     bool isEdit = widget.isEdit == true;
 
+    if (postType == PostType.experience && forACause) {
+      if (forACauseTextController.text.trim().isEmpty) {
+        missingFields.add("Philanthropic Description");
+      }
+    }
+
     // Location check for both types
     if (!isEdit &&
         (formatedAddress == null ||
@@ -2391,6 +2018,8 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
     titleImageURL = item.image ?? '';
     mixedItemImageList = item.galleryImages?.map((e) => e.image).toList() ?? [];
     _videoLinkController.text = item.videoLink ?? '';
+    forACause = item.isForACause;
+    forACauseTextController.text = item.forACauseText ?? '';
   }
 }
 

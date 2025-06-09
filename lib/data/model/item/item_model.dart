@@ -41,6 +41,7 @@ class ItemModel {
   String? created;
   String? itemType;
   int? userId;
+  String? forACauseText;
   int? categoryId;
   bool? isAlreadyOffered;
   bool? isAlreadyReported;
@@ -111,6 +112,7 @@ class ItemModel {
       this.isLike,
       this.isFeature,
       this.created,
+      this.forACauseText,
       this.itemType,
       this.userId,
       this.categoryId,
@@ -179,6 +181,7 @@ class ItemModel {
       int? isPurchased,
       List<UserRatings>? review,
       String? sellerName,
+      String? forACauseText,
       String? sellerType}) {
     return ItemModel(
       id: id ?? this.id,
@@ -210,6 +213,7 @@ class ItemModel {
       created: created ?? this.created,
       itemType: itemType ?? this.itemType,
       userId: userId ?? this.userId,
+      forACauseText: forACauseText ?? this.forACauseText,
       categoryId: categoryId ?? this.categoryId,
       isAlreadyOffered: isAlreadyOffered ?? this.isAlreadyOffered,
       isAlreadyReported: isAlreadyReported ?? this.isAlreadyReported,
@@ -229,6 +233,8 @@ class ItemModel {
       sellerType: sellerType ?? this.sellerType,
     );
   }
+
+  bool get isForACause => forACauseText != null && forACauseText!.isNotEmpty;
 
   ItemModel.fromJson(Map<String, dynamic> json) {
     if (json['area'] != null) {
@@ -285,6 +291,7 @@ class ItemModel {
     status = json['status'];
     active = json['active'] == 0 ? false : true;
     videoLink = json['video_link'];
+    forACauseText = json['for_a_cause_text'];
     isLike = json['is_liked'];
     isFeature = json['is_feature'];
     created = json['created_at'];
@@ -475,6 +482,9 @@ class User {
   int? totalReviews;
   List<String>? categories;
   bool? isFeatured;
+  String? gender;
+  String? countryCode;
+  bool? enableNotifications;
 
   User({
     this.id,
@@ -505,7 +515,10 @@ class User {
     this.showPersonalDetails,
     this.categories,
     this.averageRating,
+    this.gender,
     this.isFeatured,
+    this.enableNotifications,
+    this.countryCode,
   });
 
   User.fromJson(Map<String, dynamic> json) {
@@ -525,12 +538,14 @@ class User {
     firebaseId = json['firebase_id'];
     status = json['status'];
     apiToken = json['api_token'];
+    gender = json['gender'];
     address = json['address'];
     if (json['total_reviews'] != null) {
       totalReviews = (json['total_reviews'] as num?)?.toInt();
     }
     createdAt = json['created_at'];
     updatedAt = json['updated_at'];
+    countryCode = json['country_code'];
     isVerified = json['is_verified'];
 
     if (json['average_rating'] != null) {
@@ -550,6 +565,7 @@ class User {
     showPersonalDetails = json['show_personal_details'];
     categories = (json['categories_array'] as List<dynamic>?)?.map((e) => (e is Map<String, dynamic> ? e['name'] : e).toString()).toList();
     isFeatured = json['is_featured'] == 1 || json['is_featured'] == true;
+    enableNotifications = json['notification'] == 1 || json['notification'] == true;
   }
 
   bool get hasLocation => country != null && city != null;
@@ -573,6 +589,7 @@ class User {
     data['fcm_id'] = fcmId;
     data['average_rating'] = averageRating;
     data['firebase_id'] = firebaseId;
+    data['gender'] = gender;
     data['status'] = status;
     data['api_token'] = apiToken;
     data['address'] = address;
@@ -585,7 +602,9 @@ class User {
     data['show_personal_details'] = showPersonalDetails;
     data['categories'] = categoriesIds?.join(',');
     data['total_reviews'] = totalReviews;
+    data['country_code'] = countryCode;
     data['is_featured'] = isFeatured;
+    data['notification'] = enableNotifications;
     return data;
   }
 }

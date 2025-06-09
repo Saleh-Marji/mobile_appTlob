@@ -11,11 +11,13 @@ class LocationAutocomplete extends StatefulWidget {
   final EdgeInsets? padding;
   final double? fontSize;
   final Color? borderColor;
+  final Color? fillColor;
 
   const LocationAutocomplete({
     Key? key,
     required this.controller,
     required this.onSelected,
+    this.fillColor,
     this.onLocationSelected,
     this.radius,
     this.padding,
@@ -283,7 +285,7 @@ class _LocationAutocompleteState extends State<LocationAutocomplete> {
           border: border,
           enabledBorder: border,
           focusedBorder: border,
-          fillColor: theme.cardColor,
+          fillColor: widget.fillColor ?? theme.cardColor,
           filled: true,
         ),
       ),

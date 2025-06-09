@@ -597,6 +597,25 @@ class UiUtils {
     // Format the date into "MMMM yyyy" (i.e., April 2024)
     return DateFormat('MMMM yyyy').format(dateTime);
   }
+
+  static String formatPriceType(String? priceType) {
+    if (priceType == null) return "";
+
+    switch (priceType) {
+      case "session":
+        return "session";
+      case "consultation":
+        return "consultation";
+      case "hour":
+        return "hour";
+      case "class":
+        return "class";
+      case "fixed_fee":
+        return "fixed fee";
+      default:
+        return priceType;
+    }
+  }
 }
 
 ///Format string

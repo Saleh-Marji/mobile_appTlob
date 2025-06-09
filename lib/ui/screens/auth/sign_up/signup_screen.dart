@@ -110,7 +110,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
 
   Widget get _locationWidget => LocationAutocomplete(
         controller: _locationController,
-        hintText: "Location *".translate(context),
+        hintText: "Location".translate(context),
         onSelected: (String location) {
           // Basic handling when only the string is returned
         },
@@ -719,7 +719,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
         // Gender
         CustomTextFormField(
           fillColor: context.color.secondaryColor,
-          hintText: _clientGender ?? "Gender *",
+          hintText: _clientGender ?? "Gender",
           readOnly: true,
           onTap: () {
             showModalBottomSheet(
@@ -740,7 +740,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
             );
           },
           suffix: const Icon(Icons.arrow_drop_down),
-          validator: CustomTextFieldValidator.nullCheck,
+          // validator: CustomTextFieldValidator.nullCheck,
           controller: TextEditingController(text: _clientGender),
           borderColor: context.color.borderColor.darken(50),
         ),

@@ -1,35 +1,50 @@
-import 'dart:developer';
 import 'dart:io';
 
 import 'package:country_picker/country_picker.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hive/hive.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:tlobni/app/routes.dart';
-import 'package:tlobni/data/cubits/auth/auth_cubit.dart';
+import 'package:social_media_buttons/social_media_buttons.dart';
 import 'package:tlobni/data/cubits/auth/authentication_cubit.dart';
-import 'package:tlobni/data/cubits/slider_cubit.dart';
-import 'package:tlobni/data/cubits/system/user_details.dart';
+import 'package:tlobni/data/cubits/category/fetch_all_categories_cubit.dart';
+import 'package:tlobni/data/cubits/user/current_user_profile_cubit.dart';
 import 'package:tlobni/data/model/category_model.dart';
-import 'package:tlobni/data/model/user_model.dart';
-import 'package:tlobni/data/repositories/category_repository.dart';
+import 'package:tlobni/data/model/item/item_model.dart';
 import 'package:tlobni/ui/screens/item/add_item_screen/widgets/location_autocomplete.dart';
 import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
-import 'package:tlobni/ui/screens/widgets/custom_text_form_field.dart';
 import 'package:tlobni/ui/screens/widgets/image_cropper.dart';
 import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/ui/widgets/buttons/unelevated_regular_button.dart';
 import 'package:tlobni/ui/widgets/text/description_text.dart';
+import 'package:tlobni/ui/widgets/text/heading_text.dart';
 import 'package:tlobni/utils/app_icon.dart';
 import 'package:tlobni/utils/constant.dart';
 import 'package:tlobni/utils/custom_text.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
-import 'package:tlobni/utils/helper_utils.dart';
-import 'package:tlobni/utils/hive_keys.dart';
+import 'package:tlobni/utils/extensions/lib/widget_iterable.dart';
 import 'package:tlobni/utils/hive_utils.dart';
 import 'package:tlobni/utils/ui_utils.dart';
+
+enum UserType {
+  client,
+  expert,
+  business;
+}
+
+enum EditProfileScreenTab {
+  basicInfo,
+  about,
+  portfolio,
+  ;
+
+  @override
+  String toString() => switch (this) {
+        basicInfo => 'Basic Info',
+        about => 'About',
+        portfolio => 'Portfolio',
+      };
+}
 
 class UserProfileScreen extends StatefulWidget {
   final String from;
@@ -85,7 +100,6 @@ class UserProfileScreenState extends State<UserProfileScreen> {
   final TextEditingController tiktokController = TextEditingController();
   final TextEditingController locationController = TextEditingController();
 
-  dynamic size;
   String? city, state, country;
   double? latitude, longitude;
   String? name, email, address, gender;
@@ -94,191 +108,52 @@ class UserProfileScreenState extends State<UserProfileScreen> {
   bool isPersonalDetailShow = true;
   bool? isLoading;
   String? countryCode = "+${Constant.defaultCountryCode}";
-  String userType = "Client"; // Default type
-  String providerType = "Expert"; // Default provider type
 
-  // Categories related fields
-  List<CategoryModel> _categories = [];
-  bool _isLoadingCategories = true;
-  List<int> _selectedCategoryIds = [];
-  List<bool> _expandedPanels = [];
-  String? _selectedCategories = "";
+  Set<int> _selectedCategoryIds = {};
 
-  // Track expanded subcategories
-  final Set<int> _expandedSubcategories = {};
+  EditProfileScreenTab _tab = EditProfileScreenTab.basicInfo;
+
+  UserType? _type;
+
+  void _updateUserData(User user) {
+    phoneController.text = user.mobile ?? '';
+    nameController.text = user.name ?? '';
+    emailController.text = user.email ?? '';
+    addressController.text = user.address ?? '';
+    gender = user.gender;
+    if (user.hasLocation) {
+      locationController.text = user.location ?? '';
+      country = user.country;
+      city = user.city;
+      state = user.state;
+    }
+    isNotificationsEnabled = user.enableNotifications ?? false;
+    isPersonalDetailShow = user.showPersonalDetails == 1;
+    bioController.text = user.bio ?? '';
+    facebookController.text = user.facebook ?? '';
+    twitterController.text = user.twitter ?? '';
+    instagramController.text = user.instagram ?? '';
+    tiktokController.text = user.tiktok ?? '';
+    _selectedCategoryIds = (user.categoriesIds ?? []).toSet();
+    countryCode = user.countryCode;
+    _type = switch (user.type) {
+      'Client' => UserType.client,
+      'Expert' => UserType.expert,
+      'Business' => UserType.business,
+      _ => null,
+    };
+  }
 
   @override
   void initState() {
     super.initState();
-
-    // Determine user type
-    userType = HiveUtils.getUserType();
-    log("Initial user type from Hive: $userType");
-
-    // If Provider, determine provider type (Expert or Business)
-    if (userType == "Provider" || userType == "Expert" || userType == "Business") {
-      providerType = userType == "Business" ? "Business" : "Expert";
-    }
-
-    log("User type: $userType, Provider type: $providerType");
-
-    // Get Hive user data
-    var userData = Hive.box(HiveKeys.userDetailsBox).toMap();
-    log("Retrieved user data from Hive: $userData");
-
-    // Get user details model
-    var userDetails = HiveUtils.getUserDetails();
-
-    // Set bio from user data
-    if (userData['bio'] != null) {
-      bioController.text = userData['bio'].toString();
-    }
-
-    // Set social media links from user data only for Expert and Business users
-    if (userType == "Provider" || userType == "Expert" || userType == "Business") {
-      if (userData['facebook'] != null) {
-        facebookController.text = userData['facebook'].toString();
-      }
-      if (userData['twitter'] != null) {
-        twitterController.text = userData['twitter'].toString();
-      }
-      if (userData['instagram'] != null) {
-        instagramController.text = userData['instagram'].toString();
-      }
-      if (userData['tiktok'] != null) {
-        tiktokController.text = userData['tiktok'].toString();
-      }
-    }
-
-    // Get location data
-    countryCode = userData['country_code'] ?? userData['countryCode'];
-    city = HiveUtils.getCityName();
-    state = HiveUtils.getStateName();
-    country = HiveUtils.getCountryName();
-    latitude = HiveUtils.getLatitude();
-    longitude = HiveUtils.getLongitude();
-    if (userData['facebook'] != null) facebookController.text = userData['facebook'];
-    if (userData['twitter'] != null) instagramController.text = userData['instagram'];
-    if (userData['instagram'] != null) twitterController.text = userData['twitter'];
-    if (userData['tiktok'] != null) tiktokController.text = userData['tiktok'];
-
-    // Set email from user details if it's empty
-    if (emailController.text.isEmpty) {
-      emailController.text = userDetails.email ?? "";
-    }
-
-    // Set name based on user type
-    if (providerType == "Business") {
-      // For business users, use name field for consistency
-      if (businessNameController.text.isEmpty) {
-        // Get name from userData
-        String name = userDetails.name ?? "";
-        businessNameController.text = name;
-        log("Set business name to: $name");
-      }
-    } else {
-      // For non-business users, use regular name field
-      if (nameController.text.isEmpty) {
-        nameController.text = userDetails.name ?? "";
-      }
-    }
-
-    country = userDetails.country;
-    city = userDetails.city;
-    state = userDetails.state;
-
-    if (city != null && country != null) {
-      locationController.text = "$city, $country";
-    }
-    // Set address from user details if it's empty
-    if (addressController.text.isEmpty) {
-      addressController.text = userDetails.address ?? "";
-    }
-
-    // Handle notification settings
-    if (widget.from == "login") {
-      isNotificationsEnabled = true;
-    } else {
-      isNotificationsEnabled = HiveUtils.getUserDetails().notification == 1 ? true : false;
-    }
-
-    // Handle personal details visibility
-    if (widget.from == "login") {
-      isPersonalDetailShow = true;
-    } else {
-      isPersonalDetailShow = HiveUtils.getUserDetails().isPersonalDetailShow == 1 ? true : false;
-    }
-
-    // Set phone with country code
-    if (HiveUtils.getCountryCode() != null) {
-      countryCode = (HiveUtils.getCountryCode() != null ? HiveUtils.getCountryCode()! : "");
-      phoneController.text =
-          HiveUtils.getUserDetails().mobile != null ? HiveUtils.getUserDetails().mobile!.replaceFirst("+$countryCode", "") : "";
-    } else {
-      phoneController.text = HiveUtils.getUserDetails().mobile != null ? HiveUtils.getUserDetails().mobile! : "";
-    }
-
-    // Set gender
-    gender = userData['gender'];
-    genderController.text = gender ?? "";
-
-    // Load categories for Provider users
-    if (userType == "Provider" || userType == "Expert" || userType == "Business") {
-      _fetchCategories();
-
-      // Get stored categories - handle both string and list formats
-      var categoriesData = userData['categories'];
-      if (categoriesData != null) {
-        if (categoriesData is String) {
-          // Handle string format (comma-separated)
-          _selectedCategories = categoriesData;
-          if (_selectedCategories!.isNotEmpty) {
-            _selectedCategoryIds = _selectedCategories!.split(',').map((id) => int.tryParse(id.trim()) ?? 0).where((id) => id > 0).toList();
-          }
-        } else if (categoriesData is List) {
-          // Handle list format
-          _selectedCategoryIds = [];
-          for (var item in categoriesData) {
-            int? id = item is int ? item : int.tryParse(item.toString());
-            if (id != null && id > 0) {
-              _selectedCategoryIds.add(id);
-            }
-          }
-          // Convert to string format for consistency
-          _selectedCategories = _selectedCategoryIds.isNotEmpty ? _selectedCategoryIds.map((id) => id.toString()).join(',') : "";
-        }
-        log("Loaded categories: $_selectedCategoryIds");
-      } else {
-        _selectedCategories = "";
-        _selectedCategoryIds = [];
-      }
-    }
-
-    // Log loaded field values for debugging
-    log("Fields after init: email=${emailController.text}, name=${nameController.text}, business=${businessNameController.text}, country=$country, gender=$gender");
+    context.read<CurrentUserProfileCubit>().fetchCurrentUser();
+    _fetchCategories();
   }
 
   // Fetch categories from repository
   Future<void> _fetchCategories() async {
-    setState(() {
-      _isLoadingCategories = true;
-    });
-
-    try {
-      final CategoryRepository categoryRepository = CategoryRepository();
-      final result = await categoryRepository.fetchCategories(page: 1, type: CategoryType.providers);
-
-      setState(() {
-        _categories = result.modelList.where((category) => category.type == CategoryType.providers).toList();
-        _expandedPanels = List.generate(_categories.length, (_) => false);
-        _isLoadingCategories = false;
-      });
-    } catch (e) {
-      log('Error fetching categories: $e');
-      setState(() {
-        _isLoadingCategories = false;
-      });
-    }
+    context.read<FetchAllCategoriesCubit>().fetchCategories();
   }
 
   @override
@@ -290,533 +165,562 @@ class UserProfileScreenState extends State<UserProfileScreen> {
     addressController.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    size = MediaQuery.of(context).size;
-
-    // Get user type directly from Hive again to ensure it's current
-    userType = HiveUtils.getUserType();
-    log("Current user type in build method: $userType");
-
-    // Debug check to ensure we actually have a user type
-    if (userType.isEmpty) {
-      log("WARNING: User type is empty, defaulting to Client for UI");
-      userType = "Client"; // Fallback to ensure UI shows something
-    }
-
-    // Make sure providerType is also updated
-    if (userType == "Provider" || userType == "Expert" || userType == "Business") {
-      providerType = userType == "Business" ? "Business" : "Expert";
-    } else {
-      // Ensure client profiles don't show provider UI
-      providerType = "";
-    }
-
-    log("Building UI with userType: $userType, providerType: $providerType");
-
-    return GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(),
-      child: safeAreaCondition(
-        child: Scaffold(
-          backgroundColor: context.color.primaryColor,
-          appBar: widget.from == "login" ? null : UiUtils.buildAppBar(context, showBackButton: true),
-          body: Stack(
-            children: [
-              ScrollConfiguration(
-                behavior: RemoveGlow(),
-                child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    child: Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Form(
-                          key: _formKey,
-                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: <Widget>[
-                            Align(
-                              alignment: AlignmentDirectional.center,
-                              child: buildProfilePicture(),
-                            ),
-
-                            // Build the appropriate fields based on user type
-                            // Ensure only business/expert users see those specific fields
-                            userType == "Business" || providerType == "Business"
-                                ? _buildBusinessFields()
-                                : userType == "Expert" || providerType == "Expert"
-                                    ? _buildExpertFields()
-                                    : _buildClientFields(),
-
-                            // Common fields and buttons
-                            SizedBox(height: 10),
-                            CustomText("notification".translate(context)),
-                            SizedBox(height: 10),
-                            buildNotificationEnableDisableSwitch(context),
-                            SizedBox(height: 10),
-                            CustomText("showContactInfo".translate(context)),
-                            SizedBox(height: 10),
-                            buildPersonalDetailEnableDisableSwitch(context),
-                            SizedBox(height: 25),
-                            UiUtils.buildButton(
-                              context,
-                              onPressed: () {
-                                if (widget.from == 'login') {
-                                  validateData();
-                                } else {
-                                  if (city != null && city != "") {
-                                    HiveUtils.setCurrentLocation(
-                                        city: city, state: state, country: country, latitude: latitude, longitude: longitude);
-
-                                    context.read<SliderCubit>().fetchSlider(context);
-                                  } else {
-                                    HiveUtils.clearLocation();
-
-                                    context.read<SliderCubit>().fetchSlider(context);
-                                  }
-                                  validateData();
-                                }
-                              },
-                              height: 48,
-                              buttonTitle: "updateProfile".translate(context),
-                            )
-                          ])),
-                    )),
-              ),
-              if (isLoading != null && isLoading!)
-                Center(
-                  child: UiUtils.progress(
-                    color: context.color.territoryColor,
-                  ),
+  Widget _buildEditProfileBody() => Padding(
+        padding: EdgeInsets.all(16.0),
+        child: BlocConsumer<CurrentUserProfileCubit, CurrentUserProfileState>(
+          listener: (context, state) {
+            if (state is CurrentUserProfileSuccess) _updateUserData(state.user);
+            setState(() {});
+          },
+          builder: (context, state) {
+            if (state is CurrentUserProfileFetchProgress) {
+              return SizedBox(
+                height: context.screenHeight * 0.6,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        UiUtils.progress(),
+                      ],
+                    ),
+                  ],
                 ),
-              if (widget.from == 'login')
-                Positioned(
-                  left: 10,
-                  top: 10,
-                  child: BackButton(),
-                )
+              );
+            }
+            if (state is CurrentUserProfileFailure) return Center(child: DescriptionText(state.errorMessage));
+            if (state is! CurrentUserProfileSuccess) return SizedBox();
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (_type != UserType.client) ...[
+                  _tabsHeading(),
+                  SizedBox(height: 16.0),
+                  Expanded(child: _tabBody()),
+                ] else ...[
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: _tabContent(),
+                    ),
+                  ),
+                ],
+                SizedBox(height: 20.0),
+                _buttons(),
+              ],
+            );
+          },
+        ),
+      );
+
+  Widget _tabsHeading() {
+    final values = [
+      EditProfileScreenTab.basicInfo,
+      EditProfileScreenTab.about,
+    ];
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Color(0xfffafafa),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Color(0xfff8f3ed)),
+      ),
+      padding: EdgeInsets.all(5),
+      child: Row(
+        children: values.map(
+          (e) {
+            final isSelected = _tab == e;
+            return UnelevatedRegularButton(
+              onPressed: () => setState(() => _tab = e),
+              padding: EdgeInsets.all(20),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              color: isSelected ? context.color.primary : Colors.transparent,
+              child: HeadingText(
+                e.toString(),
+                fontSize: 16,
+                color: isSelected ? context.color.onPrimary : null,
+              ),
+            );
+          },
+        ).mapExpandedSpaceBetween(10),
+      ),
+    );
+  }
+
+  Widget _tabBody() => Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: Color(0xffede9e5)),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: _tabContent(),
+      );
+
+  Widget _tabContent() => RefreshIndicator(
+        onRefresh: () async => context.read<CurrentUserProfileCubit>().fetchCurrentUser(),
+        child: SingleChildScrollView(
+          physics: AlwaysScrollableScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: 20,
+            children: switch (_tab) {
+              EditProfileScreenTab.basicInfo => _basicInfoBody(),
+              EditProfileScreenTab.about => _aboutBody(),
+              EditProfileScreenTab.portfolio => _portfolioBody(),
+            },
+          ),
+        ),
+      );
+
+  Widget getProfileImage() {
+    if (fileUserimg != null) {
+      return Image.file(
+        fileUserimg!,
+        fit: BoxFit.cover,
+      );
+    } else {
+      if (widget.from == "login") {
+        if (HiveUtils.getUserDetails().profile != "" && HiveUtils.getUserDetails().profile != null) {
+          return UiUtils.getImage(
+            HiveUtils.getUserDetails().profile!,
+            fit: BoxFit.cover,
+          );
+        }
+
+        return UiUtils.getSvg(
+          AppIcons.defaultPersonLogo,
+          color: context.color.territoryColor,
+          fit: BoxFit.none,
+        );
+      } else {
+        if ((HiveUtils.getUserDetails().profile ?? "").isEmpty) {
+          return UiUtils.getSvg(
+            AppIcons.defaultPersonLogo,
+            color: context.color.territoryColor,
+            fit: BoxFit.none,
+          );
+        } else {
+          return UiUtils.getImage(
+            HiveUtils.getUserDetails().profile!,
+            fit: BoxFit.cover,
+          );
+        }
+      }
+    }
+  }
+
+  Widget _profilePicture() => Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Stack(
+            children: [
+              Container(
+                alignment: AlignmentDirectional.center,
+                height: 106,
+                width: 106,
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(
+                  color: context.color.territoryColor.withValues(alpha: 0.2),
+                  border: Border.all(color: context.color.secondary, width: 2),
+                  shape: BoxShape.circle,
+                ),
+                child: getProfileImage(),
+              ),
+              PositionedDirectional(
+                bottom: 0,
+                end: 0,
+                child: UnelevatedRegularButton(
+                  onPressed: showPicker,
+                  padding: EdgeInsets.all(10),
+                  color: context.color.primary,
+                  shape: CircleBorder(),
+                  child: SizedBox(width: 15, height: 15, child: UiUtils.getSvg(AppIcons.edit)),
+                ),
+              )
             ],
           ),
+        ],
+      );
+
+  Widget _section(String title, Widget child) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          HeadingText(title, fontSize: 16),
+          SizedBox(height: 10),
+          child,
+        ],
+      );
+
+  Widget _textFieldSection(
+    String title,
+    TextEditingController controller,
+    String hint, {
+    TextInputType? type,
+    Widget? prefix,
+    int? maxLines,
+  }) {
+    final border = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(8),
+      borderSide: BorderSide(color: _sectionBorderColor),
+    );
+    return IntrinsicHeight(
+      child: _section(
+        title,
+        textFormField(controller, type, maxLines, prefix, border, hint),
+      ),
+    );
+  }
+
+  TextFormField textFormField(
+    TextEditingController controller,
+    TextInputType? type,
+    int? maxLines,
+    Widget? prefix,
+    OutlineInputBorder? border,
+    String hint, {
+    Color? fillColor,
+  }) {
+    return TextFormField(
+      controller: controller,
+      style: context.textTheme.bodyMedium,
+      keyboardType: type,
+      maxLines: maxLines,
+      decoration: InputDecoration(
+        prefix: prefix,
+        isCollapsed: true,
+        isDense: true,
+        floatingLabelBehavior: FloatingLabelBehavior.always,
+        prefixIconConstraints: BoxConstraints(),
+        filled: true,
+        fillColor: fillColor ?? _textFieldFillColor,
+        contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 16),
+        border: border,
+        enabledBorder: border,
+        focusedBorder: border,
+        hintText: hint,
+      ),
+    );
+  }
+
+  Widget _switchSection(String title, bool value, ValueChanged<bool> onChanged) => _section(
+        title,
+        UnelevatedRegularButton(
+          onPressed: () => onChanged(!value),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: _sectionBorderColor)),
+          color: _textFieldFillColor,
+          padding: EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Expanded(child: DescriptionText(value ? 'Enabled' : 'Disabled')),
+              SizedBox(height: 10, child: Switch(value: value, onChanged: onChanged)),
+            ],
+          ),
+        ),
+      );
+
+  Color get _textFieldFillColor => Color(0xfff9f9f9);
+
+  Color get _sectionBorderColor => Color(0xffeeeeee);
+
+  Widget _fullName() => _textFieldSection(
+        'Full Name',
+        nameController,
+        'Enter your full name',
+      );
+
+  Widget _gender() => _section(
+      'Gender',
+      Row(
+        children: [
+          (Icons.man, 'Male'),
+          (Icons.woman, 'Female'),
+        ].map((e) {
+          final (icon, value) = e;
+          final isSelected = gender == value;
+          final textColor = isSelected ? context.color.onPrimary : context.color.primary;
+          final backgroundColor = isSelected ? context.color.primary : Colors.transparent;
+          return UnelevatedRegularButton(
+            padding: EdgeInsets.all(10),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+              side: BorderSide(color: context.color.primary),
+            ),
+            onPressed: () => setState(() => gender = value),
+            color: backgroundColor,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Icon(icon, size: 30, color: textColor),
+                SizedBox(width: 5),
+                Text(value, style: context.textTheme.bodyMedium?.copyWith(color: textColor)),
+              ],
+            ),
+          );
+        }).mapExpandedSpaceBetween(5),
+      ));
+
+  Widget _phoneCountryCodePrefix() => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            child: GestureDetector(
+              onTap: () {
+                if (HiveUtils.getUserDetails().type != AuthenticationType.phone.name) {
+                  showCountryCode();
+                }
+              },
+              child: Center(
+                child: DescriptionText(
+                  formatCountryCode(countryCode!),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          ),
+          SizedBox(width: 10),
+        ],
+      );
+
+  Widget _phoneNumber() => _textFieldSection(
+        'Phone Number',
+        phoneController,
+        'Enter your phone number',
+        type: TextInputType.phone,
+        prefix: _phoneCountryCodePrefix(),
+      );
+
+  Widget _location() => _section(
+        'Location',
+        LocationAutocomplete(
+          controller: locationController,
+          onSelected: (_) {},
+          fillColor: _textFieldFillColor,
+          radius: BorderRadius.circular(8),
+          borderColor: _sectionBorderColor,
+          hintText: 'Select your location',
+          onLocationSelected: (data) {
+            if (!mounted) return;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              setState(() {
+                city = data['city'];
+                state = data['state'];
+                country = data['country'];
+              });
+            });
+          },
+        ),
+      );
+
+  Widget _notificationSwitch() =>
+      _switchSection('Notifications', isNotificationsEnabled, (val) => setState(() => isNotificationsEnabled = val));
+
+  Widget _showContactInfoSwitch() =>
+      _switchSection('Show Contact Info', isPersonalDetailShow, (val) => setState(() => isPersonalDetailShow = val));
+
+  List<Widget> _basicInfoBody() => [
+        _profilePicture(),
+        _fullName(),
+        _gender(),
+        if (_type != UserType.client) _phoneNumber(),
+        _location(),
+        _notificationSwitch(),
+        if (_type != UserType.client) _showContactInfoSwitch(),
+      ];
+
+  Widget _aboutMe() => _textFieldSection(
+        'About Me',
+        bioController,
+        'Tell us about your services and expertise...',
+        type: TextInputType.multiline,
+        maxLines: 5,
+      );
+
+  Widget _categoriesMenu() => _section(
+        'Categories',
+        UnelevatedRegularButton(
+          onPressed: () => _showCategorySelectionDialog(),
+          padding: const EdgeInsets.all(16),
+          color: _textFieldFillColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+            side: BorderSide(color: _sectionBorderColor),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: DescriptionText(
+                  _selectedCategoryIds.isEmpty ? "Choose Categories" : "${_selectedCategoryIds.length} categories selected",
+                  color: context.color.primary.withValues(alpha: _selectedCategoryIds.isEmpty ? 0.5 : 1),
+                ),
+              ),
+              Icon(
+                Icons.arrow_drop_down,
+                color: context.color.textColorDark,
+              ),
+            ],
+          ),
+        ),
+      );
+
+  Widget _socialLinks() => _section(
+      'Social Links',
+      Container(
+        padding: EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: _textFieldFillColor,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: _sectionBorderColor),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: 10,
+          children: [
+            (SocialMediaIcons.facebook, 'Facebook', facebookController),
+            (SocialMediaIcons.instagram, 'Instagram', instagramController),
+            (Icons.music_note, 'Tiktok', tiktokController),
+            (SocialMediaIcons.twitter, 'Twitter', twitterController),
+          ].map((e) {
+            final (icon, text, controller) = e;
+            return Row(
+              children: [
+                Icon(icon, color: context.color.primary),
+                SizedBox(width: 10),
+                Expanded(
+                    child: textFormField(
+                  controller,
+                  TextInputType.url,
+                  1,
+                  null,
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: _sectionBorderColor)),
+                  'Your $text profile URL',
+                  fillColor: Colors.white,
+                ))
+              ],
+            );
+          }).toList(),
+        ),
+      ));
+
+  List<Widget> _aboutBody() => [
+        _aboutMe(),
+        _categoriesMenu(),
+        // _categoriesMultiSelect(),
+        _socialLinks()
+      ];
+
+  List<Widget> _portfolioBody() => [];
+
+  Widget _buttons() => Row(
+        children: [
+          (context.color.primary, Colors.transparent, context.color.primary, 'Cancel', _onCancelPressed),
+          (context.color.primary, context.color.primary, context.color.onPrimary, 'Save Changes', _onSaveChangesPressed),
+        ].map((e) {
+          final (borderColor, backgroundColor, textColor, text, onPressed) = e;
+          return UnelevatedRegularButton(
+            onPressed: onPressed,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: borderColor)),
+            color: backgroundColor,
+            padding: EdgeInsets.all(12),
+            child: DescriptionText(text, color: textColor),
+          );
+        }).mapExpandedSpaceBetween(10),
+      );
+
+  void _onCancelPressed() {
+    Navigator.pop(context);
+  }
+
+  void _onSaveChangesPressed() {
+    if (!validateData()) return;
+    String? fcmToken = HiveUtils.getFcmToken();
+    final String categoriesString = _selectedCategoryIds.isEmpty ? "" : _selectedCategoryIds.map((id) => id.toString()).join(',');
+
+    context.read<CurrentUserProfileCubit>().updateUserProfile(
+          name: nameController.text.trim(),
+          email: emailController.text.trim(),
+          fileUserimg: fileUserimg,
+          state: state,
+          city: city,
+          bio: bioController.text.trim(),
+          mobile: phoneController.text,
+          notification: isNotificationsEnabled == true ? "1" : "0",
+          countryCode: countryCode,
+          personalDetail: isPersonalDetailShow == true ? 1 : 0,
+          country: country,
+          gender: gender,
+          fcmToken: fcmToken,
+          categories: categoriesString,
+          facebook: facebookController.text.trim(),
+          twitter: twitterController.text.trim(),
+          instagram: instagramController.text.trim(),
+          tiktok: tiktokController.text.trim(),
+        );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: SafeArea(
+        child: Scaffold(
+          resizeToAvoidBottomInset: true,
+          appBar: UiUtils.buildAppBar(context, showBackButton: true, title: 'Edit Profile'),
+          backgroundColor: Colors.white,
+          body: _buildEditProfileBody(),
         ),
       ),
     );
   }
 
   // Client fields
-  Widget _buildClientFields() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Full Name
-        buildTextField(
-          context,
-          title: "fullName",
-          controller: nameController,
-          validator: CustomTextFieldValidator.nullCheck,
-        ),
-
-        // Email Address
-        buildTextField(
-          context,
-          readOnly: HiveUtils.getUserDetails().type == AuthenticationType.email.name ||
-                  HiveUtils.getUserDetails().type == AuthenticationType.google.name ||
-                  HiveUtils.getUserDetails().type == AuthenticationType.apple.name
-              ? true
-              : false,
-          title: "emailAddress",
-          controller: emailController,
-          validator: CustomTextFieldValidator.email,
-        ),
-
-        // Gender
-        _buildGenderDropdown(
-          context,
-          value: gender,
-          onChanged: (val) => setState(() => gender = val),
-          label: "Gender",
-        ),
-
-        // Country Selection
-        _buildLocationSelector(),
-
-        // Location/City
-        buildAddressTextField(
-          context,
-          title: "addressLbl",
-          controller: addressController,
-        ),
-      ],
-    );
-  }
 
   // Expert fields
-  Widget _buildExpertFields() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Full Name
-        buildTextField(
-          context,
-          title: "fullName",
-          controller: nameController,
-          validator: CustomTextFieldValidator.nullCheck,
-        ),
-
-        // Email Address
-        buildTextField(
-          context,
-          readOnly: HiveUtils.getUserDetails().type == AuthenticationType.email.name ||
-                  HiveUtils.getUserDetails().type == AuthenticationType.google.name ||
-                  HiveUtils.getUserDetails().type == AuthenticationType.apple.name
-              ? true
-              : false,
-          title: "emailAddress",
-          controller: emailController,
-          validator: CustomTextFieldValidator.email,
-        ),
-
-        // Bio
-        buildTextField(
-          context,
-          title: "Bio",
-          controller: bioController,
-          isMultiline: true,
-        ),
-
-        // Gender
-        _buildGenderDropdown(
-          context,
-          value: gender,
-          onChanged: (val) => setState(() => gender = val),
-          label: "Gender",
-        ),
-
-        // Country Selection
-        _buildLocationSelector(),
-
-        // Phone (Optional, Visible Only If Enabled)
-        _buildOptionalPhone(),
-
-        // Location/City
-        buildAddressTextField(
-          context,
-          title: "addressLbl",
-          controller: addressController,
-        ),
-
-        // Social Media Links
-        _buildSocialMediaLinks(),
-
-        // Categories
-        if (!_isLoadingCategories) _buildCategoryMultiSelect(),
-      ],
-    );
-  }
 
   // Business fields
-  Widget _buildBusinessFields() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Business Name - renamed to Name for consistency
-        buildTextField(
-          context,
-          title: "Name",
-          controller: businessNameController,
-          validator: CustomTextFieldValidator.nullCheck,
-        ),
-
-        // Email Address
-        buildTextField(
-          context,
-          readOnly: HiveUtils.getUserDetails().type == AuthenticationType.email.name ||
-                  HiveUtils.getUserDetails().type == AuthenticationType.google.name ||
-                  HiveUtils.getUserDetails().type == AuthenticationType.apple.name
-              ? true
-              : false,
-          title: "emailAddress",
-          controller: emailController,
-          validator: CustomTextFieldValidator.email,
-        ),
-
-        // Bio
-        buildTextField(
-          context,
-          title: "Bio",
-          controller: bioController,
-          isMultiline: true,
-        ),
-
-        // Country Selection
-        _buildLocationSelector(),
-
-        // Phone (Optional, Visible Only If Enabled)
-        _buildOptionalPhone(),
-
-        // Location/City
-        buildAddressTextField(
-          context,
-          title: "addressLbl",
-          controller: addressController,
-        ),
-
-        // Social Media Links
-        _buildSocialMediaLinks(),
-
-        // Categories
-        if (!_isLoadingCategories) _buildCategoryMultiSelect(),
-      ],
-    );
-  }
 
   // Social media links section
-  Widget _buildSocialMediaLinks() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(height: 20),
-        CustomText(
-          "Social Media Links (Optional)",
-          fontWeight: FontWeight.w600,
-        ),
-        SizedBox(height: 10),
-
-        // Facebook
-        buildTextField(
-          context,
-          title: "Facebook",
-          controller: facebookController,
-          validator: null, // Optional field
-        ),
-
-        // Twitter
-        buildTextField(
-          context,
-          title: "Twitter",
-          controller: twitterController,
-          validator: null, // Optional field
-        ),
-
-        // Instagram
-        buildTextField(
-          context,
-          title: "Instagram",
-          controller: instagramController,
-          validator: null, // Optional field
-        ),
-
-        // TikTok
-        buildTextField(
-          context,
-          title: "TikTok",
-          controller: tiktokController,
-          validator: null, // Optional field
-        ),
-      ],
-    );
-  }
 
   // Optional phone widget
-  Widget _buildOptionalPhone() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(height: 10),
-        Row(
-          children: [
-            CustomText(
-              "phoneNumber".translate(context),
-              color: context.color.textDefaultColor,
-            ),
-            SizedBox(width: 5),
-          ],
-        ),
-        SizedBox(height: 10),
-        CustomTextFormField(
-          controller: phoneController,
-          // Making it optional by removing validator
-          keyboard: TextInputType.phone,
-          isReadOnly: HiveUtils.getUserDetails().type == AuthenticationType.phone.name ? true : false,
-          fillColor: context.color.secondaryColor,
-          onChange: (value) {
-            setState(() {});
-          },
-          isMobileRequired: false,
-          fixedPrefix: SizedBox(
-            width: 55,
-            child: Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: GestureDetector(
-                  onTap: () {
-                    if (HiveUtils.getUserDetails().type != AuthenticationType.phone.name) {
-                      showCountryCode();
-                    }
-                  },
-                  child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8),
-                      child: Center(
-                        child: CustomText(
-                          formatCountryCode(countryCode!),
-                          fontSize: context.font.large,
-                          textAlign: TextAlign.center,
-                        ),
-                      )),
-                )),
-          ),
-          hintText: "phoneNumber".translate(context),
-        )
-      ],
-    );
-  }
 
   // Gender dropdown
-  Widget _buildGenderDropdown(
-    BuildContext context, {
-    required String? value,
-    required Function(String?) onChanged,
-    required String label,
-  }) {
-    final items = <String>["Male", "Female"];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(height: 10),
-        CustomText(label),
-        SizedBox(height: 10),
-        CustomTextFormField(
-          fillColor: context.color.secondaryColor,
-          hintText: value ?? label,
-          readOnly: true,
-          onTap: () {
-            showModalBottomSheet(
-              context: context,
-              builder: (context) => Column(
-                mainAxisSize: MainAxisSize.min,
-                children: items
-                    .map((gender) => ListTile(
-                          title: DescriptionText(gender),
-                          onTap: () {
-                            onChanged(gender);
-                            Navigator.pop(context);
-                          },
-                          selected: gender == value,
-                        ))
-                    .toList(),
-              ),
-            );
-          },
-          controller: TextEditingController(text: value),
-          suffix: const Icon(Icons.arrow_drop_down),
-        ),
-      ],
-    );
-  }
 
   // Country selector
-  Widget _buildLocationSelector() {
-    String label = 'Location';
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(height: 10),
-        CustomText(label),
-        SizedBox(height: 10),
-        LocationAutocomplete(
-          controller: locationController,
-          onSelected: (_) {},
-          hintText: 'Location',
-          onLocationSelected: (map) => WidgetsBinding.instance.addPostFrameCallback(
-            (_) => setState(
-              () {
-                city = map['city'];
-                state = map['state'];
-                country = map['country'];
-              },
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 
   // Categories multi-select
-  Widget _buildCategoryMultiSelect() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 20),
-        const CustomText(
-          "Categories",
-          fontWeight: FontWeight.w600,
-        ),
-        const SizedBox(height: 8),
-        GestureDetector(
-          onTap: () => _showCategorySelectionDialog(),
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              color: context.color.secondaryColor,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: context.color.borderColor.darken(10)),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    _selectedCategoryIds.isEmpty ? "Choose Categories" : "${_selectedCategoryIds.length} categories selected",
-                    style: TextStyle(
-                      color: _selectedCategoryIds.isEmpty ? context.color.textColorDark.withOpacity(0.5) : context.color.textColorDark,
-                    ),
-                  ),
-                ),
-                Icon(
-                  Icons.arrow_drop_down,
-                  color: context.color.textColorDark,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 
   // Show category selection dialog
+
   void _showCategorySelectionDialog() {
     // Search controller
     final TextEditingController searchController = TextEditingController();
-    // Track filtered categories
-    List<CategoryModel> filteredCategories = [];
     // Track expanded panels in the dialog
-    List<bool> dialogExpandedPanels = [];
-    // Track loading state
-    bool isDialogLoading = true;
+
+    Set<int> expandedCategoryIds = {};
+
+    _fetchCategories();
 
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
-        return StatefulBuilder(builder: (context, setState) {
-          // Load categories when dialog opens
-          if (isDialogLoading) {
-            _loadCategoriesForDialog(setState, filteredCategories, dialogExpandedPanels).then((_) {
-              setState(() {
-                isDialogLoading = false;
-              });
-            });
-          }
+        return BlocBuilder<FetchAllCategoriesCubit, FetchAllCategoriesState>(builder: (context, state) {
+          List<CategoryModel> categories = state is FetchAllCategoriesSuccess ? state.categories : [];
+          return StatefulBuilder(builder: (context, setState) {
+            // Load categories when dialog opens
 
-          // Filter function
-          void filterCategories(String query) {
-            if (query.isEmpty) {
-              setState(() {
+            // Filter function
+            List<CategoryModel> filterCategories(String query) {
+              List<CategoryModel> filteredCategories = [];
+              if (query.isEmpty) {
                 // Only include categories with type 'providers'
-                filteredCategories = _categories.where((category) => category.type == CategoryType.providers).toList();
-              });
-              return;
-            }
+                return categories.where((category) => category.type == CategoryType.providers).toList();
+              }
 
-            query = query.toLowerCase();
-            setState(() {
-              // First check main categories, but only those with type 'providers'
-              filteredCategories = _categories.where((category) {
+              query = query.toLowerCase();
+              filteredCategories = categories.where((category) {
                 // Only include categories with type 'providers'
                 if (category.type != CategoryType.providers) {
                   return false;
@@ -834,95 +738,102 @@ class UserProfileScreenState extends State<UserProfileScreen> {
               // Auto-expand categories with matching subcategories
               for (int i = 0; i < filteredCategories.length; i++) {
                 final category = filteredCategories[i];
-                final originalIndex = _categories.indexOf(category);
+                final originalIndex = categories.indexOf(category);
                 final hasSubcategories = category.children != null && category.children!.isNotEmpty;
 
                 final hasMatchingSubcategory =
                     category.children?.any((subcategory) => subcategory.name?.toLowerCase().contains(query) ?? false) ?? false;
 
                 if (hasMatchingSubcategory) {
-                  dialogExpandedPanels[_categories.indexOf(category)] = true;
+                  expandedCategoryIds.add(category.id ?? -1);
                 }
               }
-            });
-          }
 
-          return Dialog(
-            insetPadding: EdgeInsets.zero, // Remove default padding
-            child: Container(
-              width: MediaQuery.of(context).size.width,
-              height: MediaQuery.of(context).size.height,
-              child: Column(
-                children: [
-                  // Header with title and close button
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: context.color.secondaryColor,
-                      border: Border(
-                        bottom: BorderSide(
-                          color: context.color.borderColor.darken(10),
-                          width: 0.5,
-                        ),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.arrow_back),
-                          onPressed: () => Navigator.of(context).pop(),
-                        ),
-                        const Expanded(
-                          child: Text(
-                            "Select Categories",
-                            textAlign: TextAlign.left,
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
+              return filteredCategories;
+            }
+
+            return Dialog(
+              insetPadding: EdgeInsets.zero, // Remove default padding
+              child: Container(
+                width: MediaQuery.of(context).size.width,
+                height: MediaQuery.of(context).size.height,
+                child: Column(
+                  children: [
+                    // Header with title and close button
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: context.color.secondaryColor,
+                        border: Border(
+                          bottom: BorderSide(
+                            color: context.color.borderColor.darken(10),
+                            width: 0.5,
                           ),
                         ),
-                        TextButton(
-                          onPressed: () {
-                            // Update the main state with selected categories
-                            this.setState(() {});
-                            Navigator.of(context).pop();
-                          },
-                          child: const Text("Done"),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Search field
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: TextField(
-                      controller: searchController,
-                      style: context.textTheme.bodyMedium,
-                      decoration: InputDecoration(
-                        hintText: "Search categories or subcategories",
-                        prefixIcon: const Icon(Icons.search),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                       ),
-                      onChanged: filterCategories,
+                      child: Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.arrow_back),
+                            onPressed: () => Navigator.of(context).pop(),
+                          ),
+                          const Expanded(
+                            child: Text(
+                              "Select Categories",
+                              textAlign: TextAlign.left,
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              // Update the main state with selected categories
+                              this.setState(() {});
+                              Navigator.of(context).pop();
+                            },
+                            child: const Text("Done"),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
 
-                  // Loading indicator or categories list
-                  Expanded(
-                    child: isDialogLoading
-                        ? const Center(child: CircularProgressIndicator())
-                        : filteredCategories.isEmpty
-                            ? const Center(child: Text("No matching categories found"))
+                    // Search field
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: TextField(
+                        controller: searchController,
+                        style: context.textTheme.bodyMedium,
+                        decoration: InputDecoration(
+                          hintText: "Search categories or subcategories",
+                          prefixIcon: const Icon(Icons.search),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                        ),
+                        onChanged: (val) {
+                          setState(() {});
+                        },
+                      ),
+                    ),
+
+                    // Loading indicator or categories list
+                    Expanded(
+                      child: Builder(builder: (context) {
+                        if (state is FetchAllCategoriesInProgress) return UiUtils.progress();
+                        if (state is FetchAllCategoriesFailure) {
+                          return Center(child: DescriptionText("Error"));
+                        }
+                        final filteredCategories =
+                            filterCategories(searchController.text).where((e) => (e.subcategoriesCount ?? 0) > 0).toList();
+                        return filteredCategories.isEmpty
+                            ? const Center(child: DescriptionText("No matching categories found"))
                             : ListView.builder(
                                 itemCount: filteredCategories.length,
                                 itemBuilder: (context, index) {
                                   final category = filteredCategories[index];
-                                  final originalIndex = _categories.indexOf(category);
                                   final hasSubcategories = category.children != null && category.children!.isNotEmpty;
 
                                   return Column(
@@ -939,10 +850,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
                                           ),
                                         ),
                                         child: ListTile(
-                                          title: Text(
-                                            category.name ?? "Unknown",
-                                            style: context.textTheme.bodyMedium,
-                                          ),
+                                          title: DescriptionText(category.name ?? "Unknown"),
                                           leading: Checkbox(
                                             value: _isCategorySelected(category.id ?? 0),
                                             onChanged: (bool? value) {
@@ -980,7 +888,9 @@ class UserProfileScreenState extends State<UserProfileScreen> {
                                           // Only show trailing arrow if there are subcategories
                                           trailing: hasSubcategories
                                               ? Icon(
-                                                  dialogExpandedPanels[originalIndex] ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                                                  expandedCategoryIds.contains(category.id)
+                                                      ? Icons.keyboard_arrow_up
+                                                      : Icons.keyboard_arrow_down,
                                                   color: context.color.textColorDark,
                                                 )
                                               : null,
@@ -988,7 +898,11 @@ class UserProfileScreenState extends State<UserProfileScreen> {
                                           onTap: hasSubcategories
                                               ? () {
                                                   setState(() {
-                                                    dialogExpandedPanels[originalIndex] = !dialogExpandedPanels[originalIndex];
+                                                    if (expandedCategoryIds.contains(category.id)) {
+                                                      expandedCategoryIds.remove(category.id);
+                                                    } else {
+                                                      expandedCategoryIds.add(category.id ?? -1);
+                                                    }
                                                   });
                                                 }
                                               : null,
@@ -996,9 +910,9 @@ class UserProfileScreenState extends State<UserProfileScreen> {
                                       ),
 
                                       // Subcategories (if expanded and has subcategories)
-                                      if (hasSubcategories && dialogExpandedPanels[originalIndex])
+                                      if (hasSubcategories && expandedCategoryIds.contains(category.id))
                                         Container(
-                                          color: context.color.secondaryColor.withOpacity(0.5),
+                                          color: context.color.secondaryColor.withValues(alpha: 0.5),
                                           child: Column(
                                             children: category.children!.map((subcategory) {
                                               // Filter subcategories if search is active
@@ -1040,7 +954,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
                                                     ),
                                                   ),
                                                   // Nested subcategories
-                                                  if (hasNestedSubcategories && _isSubcategoryExpanded(subcategory.id ?? 0))
+                                                  if (hasNestedSubcategories)
                                                     Container(
                                                       color: context.color.secondaryColor.withOpacity(0.3),
                                                       child: Column(
@@ -1078,321 +992,31 @@ class UserProfileScreenState extends State<UserProfileScreen> {
                                     ],
                                   );
                                 },
-                              ),
-                  ),
-                ],
+                              );
+                      }),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          );
+            );
+          });
         });
       },
     );
   }
 
   // Helper function to check if a category is selected
+
   bool _isCategorySelected(int categoryId) {
     return _selectedCategoryIds.contains(categoryId);
   }
 
   // Load categories for dialog
-  Future<void> _loadCategoriesForDialog(
-    StateSetter setState,
-    List<CategoryModel> filteredCategories,
-    List<bool> dialogExpandedPanels,
-  ) async {
-    try {
-      final CategoryRepository categoryRepository = CategoryRepository();
-      final result = await categoryRepository.fetchCategories(page: 1, type: CategoryType.providers);
-
-      setState(() {
-        _categories = result.modelList;
-        filteredCategories.addAll(_categories.where((category) => category.type == CategoryType.providers).toList());
-        dialogExpandedPanels.addAll(List.generate(_categories.length, (_) => false));
-        _expandedPanels = List.generate(_categories.length, (_) => false);
-        _isLoadingCategories = false;
-      });
-    } catch (e) {
-      log('Error fetching categories in dialog: $e');
-      setState(() {
-        _isLoadingCategories = false;
-      });
-    }
-  }
-
-  Widget phoneWidget() {
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      SizedBox(
-        height: 10,
-      ),
-      CustomText(
-        "phoneNumber".translate(context),
-        color: context.color.textDefaultColor,
-      ),
-      SizedBox(
-        height: 10,
-      ),
-      CustomTextFormField(
-        controller: phoneController,
-        validator: CustomTextFieldValidator.phoneNumber,
-        keyboard: TextInputType.phone,
-        isReadOnly: HiveUtils.getUserDetails().type == AuthenticationType.phone.name ? true : false,
-        fillColor: context.color.secondaryColor,
-        // borderColor: context.color.borderColor.darken(10),
-        onChange: (value) {
-          setState(() {});
-        },
-        isMobileRequired: false,
-        fixedPrefix: SizedBox(
-          width: 55,
-          child: Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: GestureDetector(
-                onTap: () {
-                  if (HiveUtils.getUserDetails().type != AuthenticationType.phone.name) {
-                    showCountryCode();
-                  }
-                },
-                child: Container(
-                    // color: Colors.red,
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8),
-                    child: Center(
-                      child: CustomText(
-                        formatCountryCode(countryCode!),
-                        fontSize: context.font.large,
-                        textAlign: TextAlign.center,
-                      ),
-                    )),
-              )),
-        ),
-        hintText: "phoneNumber".translate(context),
-      )
-    ]);
-  }
-
   String formatCountryCode(String countryCode) {
     if (!countryCode.startsWith('+')) {
       return '+$countryCode';
     }
     return countryCode;
-  }
-
-  Widget safeAreaCondition({required Widget child}) {
-    if (widget.from == "login") {
-      return SafeArea(child: child);
-    }
-    return child;
-  }
-
-  Widget buildNotificationEnableDisableSwitch(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-          border: Border.all(
-            color: context.color.borderColor.darken(40),
-            width: 1.5,
-          ),
-          borderRadius: BorderRadius.circular(10),
-          color: context.color.secondaryColor),
-      height: 60,
-      width: double.infinity,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: CustomText(
-              (isNotificationsEnabled ? "enabled".translate(context) : "disabled".translate(context)).translate(context),
-              fontSize: context.font.large,
-              color: context.color.textDefaultColor,
-            ),
-          ),
-          CupertinoSwitch(
-            activeColor: context.color.territoryColor,
-            value: isNotificationsEnabled,
-            onChanged: (value) {
-              isNotificationsEnabled = value;
-              setState(() {});
-            },
-          )
-        ],
-      ),
-    );
-  }
-
-  Widget buildPersonalDetailEnableDisableSwitch(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-          border: Border.all(
-            color: context.color.borderColor.darken(40),
-            width: 1.5,
-          ),
-          borderRadius: BorderRadius.circular(10),
-          color: context.color.secondaryColor),
-      height: 60,
-      width: double.infinity,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: CustomText(
-                (isPersonalDetailShow ? "enabled".translate(context) : "disabled".translate(context)).translate(context),
-                fontSize: context.font.large,
-              )),
-          CupertinoSwitch(
-            activeColor: context.color.territoryColor,
-            value: isPersonalDetailShow,
-            onChanged: (value) {
-              isPersonalDetailShow = value;
-              setState(() {});
-            },
-          )
-        ],
-      ),
-    );
-  }
-
-  Widget buildTextField(BuildContext context,
-      {required String title,
-      required TextEditingController controller,
-      CustomTextFieldValidator? validator,
-      bool? readOnly,
-      bool isMultiline = false}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          height: 10,
-        ),
-        CustomText(
-          title.translate(context),
-          color: context.color.textDefaultColor,
-        ),
-        SizedBox(
-          height: 10,
-        ),
-        CustomTextFormField(
-          controller: controller,
-          isReadOnly: readOnly,
-          validator: validator,
-          maxLine: isMultiline ? 3 : 1,
-          // formaters: [FilteringTextInputFormatter.deny(RegExp(","))],
-          fillColor: context.color.secondaryColor,
-        ),
-      ],
-    );
-  }
-
-  Widget buildAddressTextField(BuildContext context,
-      {required String title, required TextEditingController controller, CustomTextFieldValidator? validator, bool? readOnly}) {
-    return SizedBox();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          height: 10,
-        ),
-        CustomText(title.translate(context)),
-        SizedBox(
-          height: 10,
-        ),
-        LocationAutocomplete(
-          controller: controller,
-          hintText: "enterLocation".translate(context),
-          onSelected: (value) {
-            // Do nothing here, since the controller is updated by the widget
-          },
-          onLocationSelected: (locationData) {
-            // Use post-frame callback to avoid setState during build
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              setState(() {
-                city = locationData['city'];
-                state = locationData['state'];
-                country = locationData['country'];
-
-                print("Location updated to: ${controller.text}");
-                print("City: $city, State: $state, Country: $country");
-              });
-            });
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget getProfileImage() {
-    if (fileUserimg != null) {
-      return Image.file(
-        fileUserimg!,
-        fit: BoxFit.cover,
-      );
-    } else {
-      if (widget.from == "login") {
-        if (HiveUtils.getUserDetails().profile != "" && HiveUtils.getUserDetails().profile != null) {
-          return UiUtils.getImage(
-            HiveUtils.getUserDetails().profile!,
-            fit: BoxFit.cover,
-          );
-        }
-
-        return UiUtils.getSvg(
-          AppIcons.defaultPersonLogo,
-          color: context.color.territoryColor,
-          fit: BoxFit.none,
-        );
-      } else {
-        if ((HiveUtils.getUserDetails().profile ?? "").isEmpty) {
-          return UiUtils.getSvg(
-            AppIcons.defaultPersonLogo,
-            color: context.color.territoryColor,
-            fit: BoxFit.none,
-          );
-        } else {
-          return UiUtils.getImage(
-            HiveUtils.getUserDetails().profile!,
-            fit: BoxFit.cover,
-          );
-        }
-      }
-    }
-  }
-
-  Widget buildProfilePicture() {
-    return Stack(
-      children: [
-        Container(
-          height: 124,
-          width: 124,
-          alignment: AlignmentDirectional.center,
-          decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: context.color.territoryColor, width: 2)),
-          child: Container(
-            clipBehavior: Clip.antiAlias,
-            decoration: BoxDecoration(
-              color: context.color.territoryColor.withOpacity(0.2),
-              shape: BoxShape.circle,
-            ),
-            width: 106,
-            height: 106,
-            child: getProfileImage(),
-          ),
-        ),
-        PositionedDirectional(
-          bottom: 0,
-          end: 0,
-          child: InkWell(
-            onTap: showPicker,
-            child: Container(
-                height: 37,
-                width: 37,
-                alignment: AlignmentDirectional.center,
-                decoration: BoxDecoration(
-                    border: Border.all(color: context.color.buttonColor, width: 1.5),
-                    shape: BoxShape.circle,
-                    color: context.color.territoryColor),
-                child: SizedBox(width: 15, height: 15, child: UiUtils.getSvg(AppIcons.edit))),
-          ),
-        )
-      ],
-    );
   }
 
   void showPicker() {
@@ -1471,267 +1095,33 @@ class UserProfileScreenState extends State<UserProfileScreen> {
     );
   }
 
-  Future<void> validateData() async {
-    if (_formKey.currentState!.validate()) {
-      if (widget.from == 'login') {
-        HiveUtils.setUserIsAuthenticated(true);
-      }
-      profileUpdateProcess();
-    }
-  }
-
-  void profileUpdateProcess() async {
-    setState(() {
-      isLoading = true;
-    });
+  bool validateData() {
     try {
-      // Debug output of current state before update
-      log("BEFORE UPDATE - userType: $userType, providerType: $providerType");
-
-      // Convert selected categories to string (comma-separated)
-      final String categoriesString = _selectedCategoryIds.isEmpty ? "" : _selectedCategoryIds.map((id) => id.toString()).join(',');
-
-      // Prepare update data
-      Map<String, dynamic> additionalParams = {};
-
-      // Store user type and provider type to ensure they're preserved
-      // Use providerType for more specific type if it's a business or expert
-      if (providerType == "Business") {
-        additionalParams['type'] = "Business";
-      } else if (providerType == "Expert") {
-        additionalParams['type'] = "Expert";
-      } else {
-        additionalParams['type'] = userType;
+      validateNonEmptyField('full name', controller: nameController);
+      if (_type == UserType.expert) {
+        validateNonEmptyField('gender', text: gender);
       }
-
-      log("Setting type in additionalParams: ${additionalParams['type']}");
-
-      // Add type specific fields
-      if (userType == "Provider" || userType == "Expert" || userType == "Business") {
-        // Save categories as a string for consistency with the API
-        additionalParams['categories'] = categoriesString;
-        // Add bio for Expert and Business
-        additionalParams['bio'] = bioController.text.trim();
-        // Add social media links for Expert and Business only
-        additionalParams['facebook'] = facebookController.text.trim();
-        additionalParams['twitter'] = twitterController.text.trim();
-        additionalParams['instagram'] = instagramController.text.trim();
-        additionalParams['tiktok'] = tiktokController.text.trim();
-
-        if (providerType == "Business") {
-          // No need to store businessName separately anymore
-        } else {
-          additionalParams['gender'] = gender;
+      validateNonEmptyField('location', controller: locationController);
+      validateNonEmptyField('location', text: country);
+      validateNonEmptyField('location', text: city);
+      if (_type != UserType.client) {
+        validateNonEmptyField('phone number', controller: phoneController);
+        validateNonEmptyField('bio', controller: bioController);
+        if (_selectedCategoryIds.isEmpty) {
+          throw 'Kindly select at least one category';
         }
-      } else {
-        // Client specific fields
-        additionalParams['gender'] = gender;
       }
-
-      // Add location data
-      additionalParams['country'] = country;
-
-      log('Updating profile with data: ${nameController.text}, business name: ${providerType == "Business" ? businessNameController.text.trim() : "N/A"}, categories: $categoriesString, userType: $userType');
-
-      var response;
-
-      String? fcmToken = HiveUtils.getFcmToken();
-
-      // For all user types, use the appropriate name field but send it as "name"
-      if (providerType == "Business") {
-        response = await context.read<AuthCubit>().updateuserdata(context,
-            name: businessNameController.text.trim(),
-            email: emailController.text.trim(),
-            fileUserimg: fileUserimg,
-            state: state,
-            city: city,
-            bio: bioController.text.trim(),
-            mobile: phoneController.text,
-            notification: isNotificationsEnabled == true ? "1" : "0",
-            countryCode: countryCode,
-            personalDetail: isPersonalDetailShow == true ? 1 : 0,
-            country: country,
-            fcmToken: fcmToken,
-            categories: categoriesString,
-            facebook: facebookController.text.trim(),
-            twitter: twitterController.text.trim(),
-            instagram: instagramController.text.trim(),
-            tiktok: tiktokController.text.trim());
-      } else if (providerType == "Expert") {
-        // For expert users
-        response = await context.read<AuthCubit>().updateuserdata(
-              context,
-              name: nameController.text.trim(),
-              email: emailController.text.trim(),
-              bio: bioController.text.trim(),
-              fileUserimg: fileUserimg,
-              state: state,
-              city: city,
-              mobile: phoneController.text,
-              notification: isNotificationsEnabled == true ? "1" : "0",
-              countryCode: countryCode,
-              personalDetail: isPersonalDetailShow == true ? 1 : 0,
-              country: country,
-              categories: categoriesString,
-              fcmToken: fcmToken,
-              facebook: facebookController.text.trim(),
-              twitter: twitterController.text.trim(),
-              instagram: instagramController.text.trim(),
-              tiktok: tiktokController.text.trim(),
-            );
-      } else {
-        // For client users - don't include social media fields
-        response = await context.read<AuthCubit>().updateuserdata(
-              context,
-              name: nameController.text.trim(),
-              email: emailController.text.trim(),
-              fileUserimg: fileUserimg,
-              state: state,
-              city: city,
-              fcmToken: fcmToken,
-              mobile: phoneController.text,
-              notification: isNotificationsEnabled == true ? "1" : "0",
-              countryCode: countryCode,
-              personalDetail: isPersonalDetailShow == true ? 1 : 0,
-              country: country,
-            );
-      }
-
-      // After successful update, also store the additional params that weren't handled by AuthCubit
-      if (response["status"] == true) {
-        // Get current user data
-        var userData = HiveUtils.getUserDetails();
-        Map<String, dynamic> updatedUserData = userData.toJson();
-
-        log("BEFORE ADDITIONAL PARAMS - userData: $updatedUserData");
-
-        // Update with additional parameters
-        updatedUserData.addAll(additionalParams);
-
-        log("AFTER ADDITIONAL PARAMS - userData: $updatedUserData");
-
-        // Make sure proper name field is set based on user type
-        if (providerType == "Business") {
-          // For business users, ensure name is properly set
-          if (updatedUserData['name'] == null || updatedUserData['name'] == "") {
-            updatedUserData['name'] = businessNameController.text.trim();
-          }
-        } else {
-          // For regular users, ensure name is properly set
-          if (updatedUserData['name'] == null || updatedUserData['name'] == "") {
-            updatedUserData['name'] = nameController.text.trim();
-          }
-        }
-
-        // Make sure email isn't empty
-        if (updatedUserData['email'] == null || updatedUserData['email'] == "") {
-          updatedUserData['email'] = emailController.text.trim();
-        }
-
-        updatedUserData['mobile'] = phoneController.text.trim();
-        updatedUserData['countryCode'] = countryCode;
-
-        // Save bio for Expert and Business users
-        if (userType == "Provider" || userType == "Expert" || userType == "Business") {
-          updatedUserData['bio'] = bioController.text.trim();
-
-          // Save social media data
-          updatedUserData['facebook'] = facebookController.text.trim();
-          updatedUserData['twitter'] = twitterController.text.trim();
-          updatedUserData['instagram'] = instagramController.text.trim();
-          updatedUserData['tiktok'] = tiktokController.text.trim();
-        }
-
-        // Save back to Hive
-        log('FINAL user data being saved to Hive: $updatedUserData');
-        HiveUtils.setUserData(updatedUserData);
-      }
-
-      Future.delayed(
-        Duration.zero,
-        () {
-          context.read<UserDetailsCubit>().copy(UserModel.fromJson(response['data']));
-        },
-      );
-
-      Future.delayed(
-        Duration.zero,
-        () {
-          setState(() {
-            isLoading = false;
-          });
-          HelperUtils.showSnackBarMessage(
-            context,
-            response['message'],
-          );
-          if (widget.from != "login") {
-            Navigator.pop(context);
-          }
-        },
-      );
-
-      if (widget.from == "login" && widget.popToCurrent != true) {
-        Future.delayed(
-          Duration.zero,
-          () {
-            if (HiveUtils.getCityName() != null && HiveUtils.getCityName() != "") {
-              HelperUtils.killPreviousPages(context, Routes.main, {"from": widget.from});
-            } else {
-              Navigator.of(context).pushNamedAndRemoveUntil(Routes.locationPermissionScreen, (route) => false);
-            }
-          },
-        );
-      } else if (widget.from == "login" && widget.popToCurrent == true) {
-        Future.delayed(Duration.zero, () {
-          Navigator.of(context)
-            ..pop()
-            ..pop();
-        });
-      }
+      return true;
     } catch (e) {
-      Future.delayed(Duration.zero, () {
-        setState(() {
-          isLoading = false;
-        });
-        HelperUtils.showSnackBarMessage(context, e.toString());
-      });
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      return false;
     }
   }
 
-  // Track expanded subcategories
-  bool _isSubcategoryExpanded(int subcategoryId) {
-    return _expandedSubcategories.contains(subcategoryId);
-  }
-
-  void _toggleSubcategoryExpansion(int subcategoryId) {
-    setState(() {
-      if (_isSubcategoryExpanded(subcategoryId)) {
-        _expandedSubcategories.remove(subcategoryId);
-      } else {
-        _expandedSubcategories.add(subcategoryId);
-      }
-    });
-  }
-
-  void _selectAllNestedSubcategories(CategoryModel category) {
-    if (category.children != null) {
-      for (var subcategory in category.children!) {
-        if (subcategory.id != null) {
-          _selectedCategoryIds.add(subcategory.id!);
-          _selectAllNestedSubcategories(subcategory);
-        }
-      }
-    }
-  }
-
-  void _deselectAllNestedSubcategories(CategoryModel category) {
-    if (category.children != null) {
-      for (var subcategory in category.children!) {
-        if (subcategory.id != null) {
-          _selectedCategoryIds.remove(subcategory.id!);
-          _deselectAllNestedSubcategories(subcategory);
-        }
-      }
+  void validateNonEmptyField(String fieldName, {String? text, TextEditingController? controller}) {
+    text ??= controller?.text;
+    if (text?.trim().isEmpty ?? true) {
+      throw 'Kindly enter the your $fieldName';
     }
   }
 }
