@@ -126,7 +126,7 @@ class MyListingsItemContainer extends StatelessWidget {
                   color: context.color.secondary,
                 ),
                 padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                child: DescriptionText('\$${itemModel.price?.toStringAsPrecision(2)}', fontSize: 14),
+                child: DescriptionText('\$${itemModel.price?.toStringAsFixed(1)}', fontSize: 14),
               ),
             )
           ],

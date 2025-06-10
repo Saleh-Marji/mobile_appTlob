@@ -619,55 +619,56 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
                           bottom: 0,
                           child: Row(
                             children: [
-                              InkWell(
-                                onTap: () {
-                                  if (HiveUtils.isUserAuthenticated()) {
-                                    final userDetails = HiveUtils.getUserDetails();
-                                    if (userDetails != null) {
-                                      Navigator.pushNamed(
-                                        context,
-                                        Routes.sellerProfileScreen,
-                                        arguments: {
-                                          "model": item_model.User(
-                                            id: userDetails.id,
-                                            name: userDetails.name,
-                                            email: userDetails.email,
-                                            mobile: userDetails.mobile,
-                                            type: userDetails.type,
-                                            profile: userDetails.profile,
-                                            fcmId: userDetails.fcmId,
-                                            firebaseId: userDetails.firebaseId,
-                                            status: userDetails.isActive,
-                                            apiToken: userDetails.token,
-                                            address: userDetails.address,
-                                            createdAt: userDetails.createdAt,
-                                            updatedAt: userDetails.updatedAt,
-                                            isVerified: userDetails.isVerified,
-                                            showPersonalDetails: userDetails.isPersonalDetailShow,
-                                          ),
-                                          "rating": 0.0,
-                                          "total": 0,
-                                          "from": "profile",
-                                          "viewOnly": true
-                                        },
-                                      );
+                              if (HiveUtils.getUserType() != 'Client')
+                                InkWell(
+                                  onTap: () {
+                                    if (HiveUtils.isUserAuthenticated()) {
+                                      final userDetails = HiveUtils.getUserDetails();
+                                      if (userDetails != null) {
+                                        Navigator.pushNamed(
+                                          context,
+                                          Routes.sellerProfileScreen,
+                                          arguments: {
+                                            "model": item_model.User(
+                                              id: userDetails.id,
+                                              name: userDetails.name,
+                                              email: userDetails.email,
+                                              mobile: userDetails.mobile,
+                                              type: userDetails.type,
+                                              profile: userDetails.profile,
+                                              fcmId: userDetails.fcmId,
+                                              firebaseId: userDetails.firebaseId,
+                                              status: userDetails.isActive,
+                                              apiToken: userDetails.token,
+                                              address: userDetails.address,
+                                              createdAt: userDetails.createdAt,
+                                              updatedAt: userDetails.updatedAt,
+                                              isVerified: userDetails.isVerified,
+                                              showPersonalDetails: userDetails.isPersonalDetailShow,
+                                            ),
+                                            "rating": 0.0,
+                                            "total": 0,
+                                            "from": "profile",
+                                            "viewOnly": true
+                                          },
+                                        );
+                                      }
                                     }
-                                  }
-                                },
-                                child: Container(
-                                  padding: EdgeInsets.all(4),
-                                  decoration: BoxDecoration(
-                                    color: context.color.territoryColor,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: context.color.secondaryColor),
-                                  ),
-                                  child: Icon(
-                                    Icons.person_outline,
-                                    color: kColorSecondaryBeige,
-                                    size: 18,
+                                  },
+                                  child: Container(
+                                    padding: EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: context.color.territoryColor,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: context.color.secondaryColor),
+                                    ),
+                                    child: Icon(
+                                      Icons.person_outline,
+                                      color: kColorSecondaryBeige,
+                                      size: 18,
+                                    ),
                                   ),
                                 ),
-                              ),
                               SizedBox(width: 8),
                               InkWell(
                                 onTap: () {

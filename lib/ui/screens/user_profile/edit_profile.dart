@@ -524,7 +524,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
   List<Widget> _basicInfoBody() => [
         _profilePicture(),
         _fullName(),
-        _gender(),
+        if(_type != UserType.business) _gender(),
         if (_type != UserType.client) _phoneNumber(),
         _location(),
         _notificationSwitch(),
