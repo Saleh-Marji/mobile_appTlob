@@ -116,7 +116,6 @@ class UserProfileScreenState extends State<UserProfileScreen> {
   UserType? _type;
 
   void _updateUserData(User user) {
-    phoneController.text = user.mobile ?? '';
     nameController.text = user.name ?? '';
     emailController.text = user.email ?? '';
     addressController.text = user.address ?? '';
@@ -127,6 +126,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
       city = user.city;
       state = user.state;
     }
+    phoneController.text = user.mobile ?? '';
     isNotificationsEnabled = user.enableNotifications ?? false;
     isPersonalDetailShow = user.showPersonalDetails == 1;
     bioController.text = user.bio ?? '';
@@ -1102,10 +1102,10 @@ class UserProfileScreenState extends State<UserProfileScreen> {
       if (_type == UserType.expert) {
         validateNonEmptyField('gender', text: gender);
       }
-      validateNonEmptyField('location', controller: locationController);
-      validateNonEmptyField('location', text: country);
-      validateNonEmptyField('location', text: city);
       if (_type != UserType.client) {
+        validateNonEmptyField('location', controller: locationController);
+        validateNonEmptyField('location', text: country);
+        validateNonEmptyField('location', text: city);
         validateNonEmptyField('phone number', controller: phoneController);
         // validateNonEmptyField('bio', controller: bioController);
         if (_selectedCategoryIds.isEmpty) {

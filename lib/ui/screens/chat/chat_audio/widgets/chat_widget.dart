@@ -5,6 +5,12 @@ import 'dart:io';
 import 'package:any_link_preview/any_link_preview.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:tlobni/app/app_theme.dart';
 import 'package:tlobni/data/cubits/chat/send_message.dart';
 import 'package:tlobni/data/cubits/system/app_theme_cubit.dart';
@@ -15,12 +21,6 @@ import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/helper_utils.dart';
 import 'package:tlobni/utils/hive_utils.dart';
 import 'package:tlobni/utils/ui_utils.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:open_filex/open_filex.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 part "parts/attachment.part.dart";
@@ -94,8 +94,7 @@ class ChatMessage extends StatefulWidget {
   State<ChatMessage> createState() => ChatMessageState();
 }
 
-class ChatMessageState extends State<ChatMessage>
-    with AutomaticKeepAliveClientMixin {
+class ChatMessageState extends State<ChatMessage> with AutomaticKeepAliveClientMixin {
   bool isChatSent = false;
   bool selectedMessage = false;
   static bool isMounted = false;
@@ -104,9 +103,7 @@ class ChatMessageState extends State<ChatMessage>
 
   @override
   void initState() {
-    if (widget.senderId.toString() == HiveUtils.getUserId() &&
-        (widget.isSentNow == true) &&
-        isChatSent == false) {
+    if (widget.senderId.toString() == HiveUtils.getUserId() && (widget.isSentNow == true) && isChatSent == false) {
       if (!sentMessages.contains(widget.key)) {
         context.read<SendMessageCubit>().send(
               attachment: widget.file,
@@ -139,8 +136,7 @@ class ChatMessageState extends State<ChatMessage>
 
   bool _isLink(String input) {
     ///This will check if text contains link
-    final matcher = RegExp(
-        r"(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)");
+    final matcher = RegExp(r"(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)");
 
     // First check if it matches our pattern
     bool isMatch = matcher.hasMatch(input);
@@ -172,8 +168,7 @@ class ChatMessageState extends State<ChatMessage>
 
   List _replaceLink() {
     //This function will make part of text where link starts. we put invisible charector so we can split it with it
-    final linkPattern = RegExp(
-        r"(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)");
+    final linkPattern = RegExp(r"(http(s)?:\/\/.)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)");
 
     ///This is invisible charector [You can replace it with any special charector which generally nobody use]
     const String substringIdentifier = "‎";
@@ -212,8 +207,7 @@ class ChatMessageState extends State<ChatMessage>
   Widget build(BuildContext context) {
     super.build(context);
 
-    bool isDark =
-        context.watch<AppThemeCubit>().state.appTheme == AppTheme.dark;
+    bool isDark = context.watch<AppThemeCubit>().state.appTheme == AppTheme.dark;
 
     return GestureDetector(
       onLongPress: () {
@@ -226,9 +220,8 @@ class ChatMessageState extends State<ChatMessage>
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 7),
         child: Container(
-          alignment: widget.senderId.toString() == HiveUtils.getUserId()
-              ? AlignmentDirectional.centerEnd
-              : AlignmentDirectional.centerStart,
+          alignment:
+              widget.senderId.toString() == HiveUtils.getUserId() ? AlignmentDirectional.centerEnd : AlignmentDirectional.centerStart,
           width: MediaQuery.of(context).size.width,
           margin: EdgeInsetsDirectional.only(
             // top: MediaQuery.of(context).size.height * 0.007,
@@ -236,14 +229,10 @@ class ChatMessageState extends State<ChatMessage>
             start: widget.senderId.toString() == HiveUtils.getUserId() ? 0 : 20,
           ),
           child: Column(
-            crossAxisAlignment:
-                widget.senderId.toString() == HiveUtils.getUserId()
-                    ? CrossAxisAlignment.end
-                    : CrossAxisAlignment.start,
+            crossAxisAlignment: widget.senderId.toString() == HiveUtils.getUserId() ? CrossAxisAlignment.end : CrossAxisAlignment.start,
             children: [
               Container(
-                constraints:
-                    BoxConstraints(maxWidth: context.screenWidth * 0.74),
+                constraints: BoxConstraints(maxWidth: context.screenWidth * 0.74),
                 decoration: BoxDecoration(
                     color: selectedMessage == true
                         ? (widget.senderId.toString() == HiveUtils.getUserId()
@@ -251,7 +240,7 @@ class ChatMessageState extends State<ChatMessage>
                             : context.color.secondaryColor.darken(45))
                         : (widget.senderId.toString() == HiveUtils.getUserId()
                             ? context.color.territoryColor.withOpacity(0.3)
-                            : context.color.secondaryColor),
+                            : Colors.grey.shade200),
                     borderRadius: BorderRadius.circular(8)),
                 child: Wrap(
                   runAlignment: WrapAlignment.end,
@@ -264,41 +253,31 @@ class ChatMessageState extends State<ChatMessage>
                         child: widget.audio != ""
                             ? RecordMessage(
                                 url: widget.audio ?? "",
-                                isSentByMe: widget.senderId.toString() ==
-                                    HiveUtils.getUserId(),
+                                isSentByMe: widget.senderId.toString() == HiveUtils.getUserId(),
                               )
                             : Column(
                                 mainAxisSize: MainAxisSize.min,
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  if (widget.file != "")
-                                    AttachmentMessage(url: widget.file!),
+                                  if (widget.file != "") AttachmentMessage(url: widget.file!),
 
                                   //This is preview builder for image
                                   ValueListenableBuilder(
                                       valueListenable: _linkAddNotifier,
                                       builder: (context, dynamic value, c) {
-                                        if (value == null ||
-                                            value == "" ||
-                                            value.toString().trim().isEmpty) {
+                                        if (value == null || value == "" || value.toString().trim().isEmpty) {
                                           return const SizedBox.shrink();
                                         }
 
                                         return FutureBuilder(
-                                          future: AnyLinkPreview.getMetadata(
-                                                  link: value)
-                                              .catchError((error) {
+                                          future: AnyLinkPreview.getMetadata(link: value).catchError((error) {
                                             // Handle any errors that occur during metadata retrieval
-                                            debugPrint(
-                                                "Link preview error: $error");
+                                            debugPrint("Link preview error: $error");
                                             return null;
                                           }),
-                                          builder: (context,
-                                              AsyncSnapshot snapshot) {
-                                            if (snapshot.connectionState ==
-                                                ConnectionState.done) {
-                                              if (snapshot.data == null ||
-                                                  snapshot.hasError) {
+                                          builder: (context, AsyncSnapshot snapshot) {
+                                            if (snapshot.connectionState == ConnectionState.done) {
+                                              if (snapshot.data == null || snapshot.hasError) {
                                                 return const SizedBox.shrink();
                                               }
                                               return LinkPreviw(
@@ -313,9 +292,7 @@ class ChatMessageState extends State<ChatMessage>
                                   SelectableText.rich(
                                     TextSpan(
                                       style: TextStyle(
-                                          color: (isDark &&
-                                                  widget.senderId.toString() !=
-                                                      HiveUtils.getUserId())
+                                          color: (isDark && widget.senderId.toString() != HiveUtils.getUserId())
                                               ? context.color.buttonColor
                                               : context.color.textDefaultColor),
                                       children: _replaceLink().map((data) {
@@ -323,15 +300,12 @@ class ChatMessageState extends State<ChatMessage>
                                         if (_isLink(data)) {
                                           //This will notify priview object that it has link
                                           try {
-                                            if (link != null &&
-                                                link!.isNotEmpty) {
+                                            if (link != null && link!.isNotEmpty) {
                                               _linkAddNotifier.value = link;
-                                              _linkAddNotifier
-                                                  .notifyListeners();
+                                              _linkAddNotifier.notifyListeners();
                                             }
                                           } catch (e) {
-                                            debugPrint(
-                                                "Error setting link: $e");
+                                            debugPrint("Error setting link: $e");
                                           }
 
                                           return TextSpan(
@@ -339,68 +313,41 @@ class ChatMessageState extends State<ChatMessage>
                                               recognizer: TapGestureRecognizer()
                                                 ..onTap = () async {
                                                   if (link != null) {
-                                                    await launchUrl(
-                                                        Uri.parse(link!));
+                                                    await launchUrl(Uri.parse(link!));
                                                   }
                                                 },
-                                              style: TextStyle(
-                                                  decoration:
-                                                      TextDecoration.underline,
-                                                  color: Colors.blue[800]));
+                                              style: TextStyle(decoration: TextDecoration.underline, color: Colors.blue[800]));
                                         }
                                         //This will make text bold
                                         return TextSpan(
                                           text: "",
-                                          children:
-                                              _matchAstric(data).map((text) {
-                                            if (text
-                                                    .toString()
-                                                    .startsWith("*") &&
-                                                text.toString().endsWith("*")) {
+                                          children: _matchAstric(data).map((text) {
+                                            if (text.toString().startsWith("*") && text.toString().endsWith("*")) {
                                               return TextSpan(
-                                                  text:
-                                                      text.replaceAll("*", ""),
+                                                  text: text.replaceAll("*", ""),
                                                   style: TextStyle(
-                                                      color: (isDark &&
-                                                              widget.senderId
-                                                                      .toString() !=
-                                                                  HiveUtils
-                                                                      .getUserId())
-                                                          ? context
-                                                              .color.buttonColor
-                                                          : context.color
-                                                              .textDefaultColor,
-                                                      fontWeight:
-                                                          FontWeight.w800));
+                                                      color: (isDark && widget.senderId.toString() != HiveUtils.getUserId())
+                                                          ? context.color.buttonColor
+                                                          : context.color.textDefaultColor,
+                                                      fontWeight: FontWeight.w800));
                                             }
 
                                             return TextSpan(
                                                 text: text,
                                                 style: TextStyle(
-                                                    color: (isDark &&
-                                                            widget.senderId
-                                                                    .toString() !=
-                                                                HiveUtils
-                                                                    .getUserId())
-                                                        ? context
-                                                            .color.buttonColor
-                                                        : context.color
-                                                            .textDefaultColor));
+                                                    color: (isDark && widget.senderId.toString() != HiveUtils.getUserId())
+                                                        ? context.color.buttonColor
+                                                        : context.color.textDefaultColor));
                                           }).toList(),
                                           style: TextStyle(
-                                              color: widget.senderId
-                                                          .toString() ==
-                                                      HiveUtils.getUserId()
+                                              color: widget.senderId.toString() == HiveUtils.getUserId()
                                                   ? context.color.secondaryColor
-                                                  : context
-                                                      .color.textColorDark),
+                                                  : context.color.textColorDark),
                                         );
                                       }).toList(),
                                     ),
                                     style: TextStyle(
-                                        color: (isDark &&
-                                                widget.senderId.toString() !=
-                                                    HiveUtils.getUserId())
+                                        color: (isDark && widget.senderId.toString() != HiveUtils.getUserId())
                                             ? context.color.buttonColor
                                             : context.color.textDefaultColor),
                                   ),
@@ -409,30 +356,24 @@ class ChatMessageState extends State<ChatMessage>
                       ),
                     ),
                     if (widget.senderId.toString() != HiveUtils.getUserId() &&
-                        (widget.isSentNow != null
-                            ? widget.isSentNow!
-                            : widget.createdAt ==
-                                DateTime.now().toString())) ...[
+                        (widget.isSentNow != null ? widget.isSentNow! : widget.createdAt == DateTime.now().toString())) ...[
                       BlocConsumer<SendMessageCubit, SendMessageState>(
                         listener: (context, state) {
                           if (state is SendMessageSuccess) {
                             isChatSent = true;
 
-                            WidgetsBinding.instance
-                                .addPostFrameCallback((timeStamp) {
+                            WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
                               if (mounted) setState(() {});
                             });
                           }
                           if (state is SendMessageFailed) {
-                            HelperUtils.showSnackBarMessage(
-                                context, state.error.toString());
+                            HelperUtils.showSnackBarMessage(context, state.error.toString());
                           }
                         },
                         builder: (context, state) {
                           if (state is SendMessageInProgress) {
                             return Padding(
-                              padding: EdgeInsetsDirectional.only(
-                                  end: 5.0, bottom: 2),
+                              padding: EdgeInsetsDirectional.only(end: 5.0, bottom: 2),
                               child: Icon(
                                 Icons.watch_later_outlined,
                                 size: context.font.smaller,
@@ -443,8 +384,7 @@ class ChatMessageState extends State<ChatMessage>
 
                           if (state is SendMessageFailed) {
                             return Padding(
-                              padding: EdgeInsetsDirectional.only(
-                                  end: 5.0, bottom: 2),
+                              padding: EdgeInsetsDirectional.only(end: 5.0, bottom: 2),
                               child: Icon(
                                 Icons.error,
                                 size: context.font.smaller,
@@ -465,16 +405,10 @@ class ChatMessageState extends State<ChatMessage>
               Padding(
                 padding: EdgeInsetsDirectional.only(end: 3.0),
                 child: CustomText(
-                  (DateTime.parse(widget.createdAt))
-                      .toLocal()
-                      .toIso8601String()
-                      .toString()
-                      .formatDate(
+                  (DateTime.parse(widget.createdAt)).toLocal().toIso8601String().toString().formatDate(
                         format: "hh:mm aa",
                       ),
-                  color: widget.senderId.toString() != HiveUtils.getUserId()
-                      ? context.color.textLightColor
-                      : context.color.textLightColor,
+                  color: widget.senderId.toString() != HiveUtils.getUserId() ? context.color.textLightColor : context.color.textLightColor,
                   fontSize: context.font.smaller,
                 ),
               ),

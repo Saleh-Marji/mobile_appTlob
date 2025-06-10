@@ -96,8 +96,10 @@ class _SignupScreenState extends CloudState<SignupScreen> {
   // Replace hardcoded categories with fetched categories
   List<CategoryModel> _categories = [];
   bool _isLoadingCategories = true;
+
   // We'll store the user's selected categories and subcategories
   List<int> _selectedCategoryIds = [];
+
   // Track which panels are expanded
   List<bool> _expandedPanels = [];
 
@@ -269,25 +271,25 @@ class _SignupScreenState extends CloudState<SignupScreen> {
   }
 
   void onTapSignup() async {
-    setState(() {
-      _showCategoryError = false; // Reset error state
-    });
-
-    if (_formKey.currentState?.validate() ?? false) {
-      // Additional validation for required fields based on account type
-      if (_userType == "Provider" && _selectedCategoryIds.isEmpty) {
-        // Show error for categories field
-        setState(() {
-          _showCategoryError = true;
-        });
-        return;
-      }
-
+    try {
       setState(() {
-        _isLoading = true;
+        _showCategoryError = false; // Reset error state
       });
 
-      try {
+      if (_formKey.currentState?.validate() ?? false) {
+        // Additional validation for required fields based on account type
+        if (_userType == "Provider" && _selectedCategoryIds.isEmpty) {
+          // Show error for categories field
+          setState(() {
+            _showCategoryError = true;
+          });
+          return;
+        }
+
+        setState(() {
+          _isLoading = true;
+        });
+
         // Prepare categories as a string
         final String categoriesString = _userType == "Provider" ? _selectedCategoryIds.map((id) => id.toString()).join(',') : "";
 
@@ -302,6 +304,8 @@ class _SignupScreenState extends CloudState<SignupScreen> {
         }
 
         await FirebaseMessagingService().getToken();
+
+        if (HiveUtils.getFcmToken() == null) throw ('An error has occurred, kindly try again');
 
         // Collect all user data
         final userData = {
@@ -422,30 +426,30 @@ class _SignupScreenState extends CloudState<SignupScreen> {
             SnackBar(content: Text(response["message"] ?? "Registration failed")),
           );
         }
-      } catch (e) {
-        setState(() {
-          _isLoading = false;
-        });
-
-        log('Signup error: $e');
-
-        // Show a more user-friendly error message
-        String errorMessage = 'Signup failed';
-
-        // Extract the error message if it's an API error
-        if (e.toString().contains('The selected type is invalid')) {
-          errorMessage = 'Invalid account type selected. Please try again.';
-        } else if (e.toString().contains('The email has already been taken')) {
-          errorMessage = 'This email is already registered. Please use another email or try logging in.';
-        } else {
-          // For other errors, just show the error message as is
-          errorMessage = e.toString();
-        }
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage)),
-        );
       }
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+
+      log('Signup error: $e');
+
+      // Show a more user-friendly error message
+      String errorMessage = 'Signup failed';
+
+      // Extract the error message if it's an API error
+      if (e.toString().contains('The selected type is invalid')) {
+        errorMessage = 'Invalid account type selected. Please try again.';
+      } else if (e.toString().contains('The email has already been taken')) {
+        errorMessage = 'This email is already registered. Please use another email or try logging in.';
+      } else {
+        // For other errors, just show the error message as is
+        errorMessage = e.toString();
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(errorMessage)),
+      );
     }
   }
 
