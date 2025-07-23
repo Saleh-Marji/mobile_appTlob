@@ -12,6 +12,15 @@ class ItemModel {
     'virtual',
   ];
 
+  static const List<(String, String)> paymentTypesWithTitles = [
+    ("consultation", "Consultation"),
+    ("session", "Session"),
+    ("hour", "Hour"),
+    ("class", "Class"),
+    ("fixed_fee", "Fixed Fee"),
+    ("month", "Month"),
+  ];
+
   int? id;
   String? name;
   String? slug;

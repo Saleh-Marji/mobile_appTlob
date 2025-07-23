@@ -15,6 +15,7 @@ import 'package:tlobni/data/cubits/home/fetch_home_all_items_cubit.dart';
 import 'package:tlobni/data/cubits/home/fetch_home_screen_cubit.dart';
 import 'package:tlobni/data/cubits/system/app_theme_cubit.dart';
 import 'package:tlobni/data/model/category_model.dart';
+import 'package:tlobni/data/model/item/item_model.dart';
 import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
 import 'package:tlobni/ui/screens/widgets/blurred_dialoge_box.dart';
 import 'package:tlobni/ui/screens/widgets/full_screen_image_view.dart';
@@ -25,6 +26,7 @@ import 'package:tlobni/utils/app_icon.dart';
 import 'package:tlobni/utils/constant.dart';
 import 'package:tlobni/utils/custom_text.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
+import 'package:tlobni/utils/extensions/lib/iterable.dart';
 import 'package:tlobni/utils/helper_utils.dart';
 import 'package:tlobni/utils/hive_utils.dart';
 import 'package:tlobni/utils/network_to_localsvg.dart';
@@ -600,21 +602,7 @@ class UiUtils {
 
   static String formatPriceType(String? priceType) {
     if (priceType == null) return "";
-
-    switch (priceType) {
-      case "session":
-        return "session";
-      case "consultation":
-        return "consultation";
-      case "hour":
-        return "hour";
-      case "class":
-        return "class";
-      case "fixed_fee":
-        return "fixed fee";
-      default:
-        return priceType;
-    }
+    return ItemModel.paymentTypesWithTitles.firstWhereOrNull((e) => e.$1 == priceType)?.$2 ?? priceType;
   }
 }
 

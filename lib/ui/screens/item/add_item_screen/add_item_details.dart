@@ -348,13 +348,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
         label: 'Price Type',
         child: FormDropdown(
           hint: 'Select type',
-          items: [
-            ("session", "Session"),
-            ("consultation", "Consultation"),
-            ("hour", "Hour"),
-            ("class", "Class"),
-            ("fixed_fee", "Fixed Fee"),
-          ],
+          items: ItemModel.paymentTypesWithTitles,
           selectedValue: _priceType,
           onSelected: (value) {
             setState(() => _priceType = value);
@@ -1492,63 +1486,20 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
         Wrap(
           spacing: 16,
           runSpacing: 10,
-          children: [
-            _buildRadioOption(
+          children: ItemModel.paymentTypesWithTitles.map((e) {
+            final (value, title) = e;
+            return _buildRadioOption(
               context,
-              title: "Session",
-              value: "session",
+              title: title,
+              value: value,
               groupValue: _priceType,
               onChanged: (value) {
                 setState(() {
                   _priceType = value;
                 });
               },
-            ),
-            _buildRadioOption(
-              context,
-              title: "Consultation",
-              value: "consultation",
-              groupValue: _priceType,
-              onChanged: (value) {
-                setState(() {
-                  _priceType = value;
-                });
-              },
-            ),
-            _buildRadioOption(
-              context,
-              title: "Hour",
-              value: "hour",
-              groupValue: _priceType,
-              onChanged: (value) {
-                setState(() {
-                  _priceType = value;
-                });
-              },
-            ),
-            _buildRadioOption(
-              context,
-              title: "Class",
-              value: "class",
-              groupValue: _priceType,
-              onChanged: (value) {
-                setState(() {
-                  _priceType = value;
-                });
-              },
-            ),
-            _buildRadioOption(
-              context,
-              title: "Fixed Fee",
-              value: "fixed_fee",
-              groupValue: _priceType,
-              onChanged: (value) {
-                setState(() {
-                  _priceType = value;
-                });
-              },
-            ),
-          ],
+            );
+          }).toList(),
         ),
         SizedBox(height: 15),
       ],

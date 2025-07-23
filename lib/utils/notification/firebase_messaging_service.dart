@@ -27,18 +27,22 @@ class FirebaseMessagingService {
   String? get fcmToken => _fcmToken;
 
   Future<void> initialize(BuildContext context) async {
-    // Get permission for iOS
-    if (Platform.isIOS) {
-      await _requestPermission();
+    try {
+      // Get permission for iOS
+      if (Platform.isIOS) {
+        await _requestPermission();
+      }
+
+      // Get FCM token
+      await getToken();
+
+      // Configure message handling
+      _configureMessageHandling(context);
+      
+      debugPrint('Firebase Messaging Service initialized successfully');
+    } catch (e) {
+      debugPrint('Error initializing Firebase Messaging Service: $e');
     }
-
-    // Get FCM token
-    await getToken();
-
-    // await _firebaseMessaging.subscribeToTopic('all');
-
-    // Configure message handling
-    _configureMessageHandling(context);
   }
 
   Future<void> _requestPermission() async {
@@ -53,12 +57,20 @@ class FirebaseMessagingService {
   }
 
   Future<void> getToken() async {
-    _fcmToken = await _firebaseMessaging.getToken();
-    debugPrint('FCM Token: $_fcmToken');
+    try {
+      _fcmToken = await _firebaseMessaging.getToken();
+      debugPrint('FCM Token: $_fcmToken');
+      
+      if (_fcmToken == null) {
+        debugPrint('FCM Token is null - this indicates a configuration issue');
+        return;
+      }
 
-    // Store token in secure storage if user is authenticated
-    if (_fcmToken != null) {
+      // Store token in secure storage if user is authenticated
       HiveUtils.setFcmToken(_fcmToken!);
+      debugPrint('FCM Token stored successfully');
+    } catch (e) {
+      debugPrint('Error getting FCM token: $e');
     }
 
     // Subscribe to topics
