@@ -58,6 +58,9 @@ it will call API in background without showing the process and when data availab
 
   static const MapType googleMapType = MapType.normal; //none , normal , satellite , terrain , hybrid
 
+  ///Google Places API Key - Add your Google Places API key here
+  static const String googlePlacesApiKey = "AIzaSyApCJcVfUTKAdfiNB2vZ399YgJEFy_d-vk";
+
   ///Firebase authentication OTP timer.
   static const int otpResendSecond = 60 * 2;
   static const int otpTimeOutSecond = 60 * 2;

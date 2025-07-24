@@ -2840,27 +2840,52 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
         ),
         ClipRRect(
           borderRadius: BorderRadius.circular(18),
-          child: SizedBox(
-            height: 200,
-            child: GoogleMap(
-              zoomControlsEnabled: false,
-              zoomGesturesEnabled: false,
-              onTap: (latLng) {
-                _navigateToGoogleMapScreen(context);
-              },
-              initialCameraPosition: CameraPosition(target: currentPosition, zoom: 13),
-              mapType: MapType.normal,
-              markers: {
-                Marker(
-                  markerId: MarkerId('currentPosition'),
-                  position: currentPosition,
-                  onTap: () {
-                    // Navigate on marker tap
+          child: Stack(
+            children: [
+              SizedBox(
+                height: 200,
+                child: GoogleMap(
+                  zoomControlsEnabled: false,
+                  zoomGesturesEnabled: false,
+                  onTap: (latLng) {
                     _navigateToGoogleMapScreen(context);
                   },
-                )
-              },
-            ),
+                  initialCameraPosition: CameraPosition(target: currentPosition, zoom: 13),
+                  mapType: MapType.normal,
+                  markers: {
+                    Marker(
+                      markerId: MarkerId('currentPosition'),
+                      position: currentPosition,
+                      onTap: () {
+                        // Navigate on marker tap
+                        _navigateToGoogleMapScreen(context);
+                      },
+                    )
+                  },
+                ),
+              ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: FloatingActionButton.small(
+                  onPressed: () {
+                    Navigator.pushNamed(
+                      context,
+                      Routes.itemLocationScreen,
+                      arguments: {
+                        'item': model,
+                      },
+                    );
+                  },
+                  backgroundColor: context.color.secondaryColor,
+                  child: Icon(
+                    Icons.fullscreen,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ],

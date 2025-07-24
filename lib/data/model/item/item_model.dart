@@ -487,6 +487,7 @@ class User {
   int? showPersonalDetails;
   int? isVerified;
   String? country, state, city;
+  double? latitude, longitude;
   List<int>? categoriesIds;
   int? totalReviews;
   List<String>? categories;
@@ -518,8 +519,10 @@ class User {
     this.isVerified,
     this.country,
     this.state,
-    this.totalReviews,
     this.city,
+    this.latitude,
+    this.longitude,
+    this.totalReviews,
     this.categoriesIds,
     this.showPersonalDetails,
     this.categories,
@@ -556,6 +559,8 @@ class User {
     updatedAt = json['updated_at'];
     countryCode = json['country_code'];
     isVerified = json['is_verified'];
+    latitude = json['latitude']?.toDouble();
+    longitude = json['longitude']?.toDouble();
 
     if (json['average_rating'] != null) {
       averageRating =

@@ -42,6 +42,9 @@ class Constant {
   static String emailAuthentication = "";
   static String appleAuthentication = "";
 
+  // Google Places API Key
+  static const String googlePlaceAPIkey = AppSettings.googlePlacesApiKey;
+
   //
   static int otpTimeOutSecond = AppSettings.otpTimeOutSecond; //otp time out
   static int otpResendSecond = AppSettings.otpResendSecond; // resend otp timer
