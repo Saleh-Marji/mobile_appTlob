@@ -20,7 +20,6 @@ import 'package:tlobni/data/model/category_model.dart';
 import 'package:tlobni/data/model/item/item_model.dart';
 import 'package:tlobni/ui/screens/item/add_item_screen/models/post_type.dart';
 import 'package:tlobni/ui/screens/item/add_item_screen/widgets/image_adapter.dart';
-import 'package:tlobni/ui/screens/item/add_item_screen/widgets/location_autocomplete.dart';
 import 'package:tlobni/ui/screens/item/my_items/my_item_tab_screen.dart';
 import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
 import 'package:tlobni/ui/screens/widgets/blurred_dialoge_box.dart';
@@ -30,6 +29,7 @@ import 'package:tlobni/ui/widgets/buttons/primary_button.dart';
 import 'package:tlobni/ui/widgets/buttons/regular_button.dart';
 import 'package:tlobni/ui/widgets/buttons/unelevated_regular_button.dart';
 import 'package:tlobni/ui/widgets/dropdown/form_dropdown.dart';
+import 'package:tlobni/ui/widgets/location_picker_widget.dart';
 import 'package:tlobni/ui/widgets/text/description_text.dart';
 import 'package:tlobni/ui/widgets/text/heading_text.dart';
 import 'package:tlobni/ui/widgets/text/small_text.dart';
@@ -38,6 +38,7 @@ import 'package:tlobni/utils/custom_text.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/extensions/lib/iterable_iterable.dart';
 import 'package:tlobni/utils/extensions/lib/widget_iterable.dart';
+import 'package:tlobni/utils/google_maps_service.dart';
 import 'package:tlobni/utils/helper_utils.dart';
 import 'package:tlobni/utils/image_picker.dart';
 import 'package:tlobni/utils/ui_utils.dart';
@@ -133,6 +134,10 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
 
   // Location autocomplete
   final TextEditingController locationController = TextEditingController();
+
+  // Location coordinates
+  double? _selectedLatitude;
+  double? _selectedLongitude;
 
   //Text Controllers
   final TextEditingController _titleController = TextEditingController();
@@ -368,13 +373,98 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
 
   Widget _location() => _field(
         label: 'Location',
-        child: LocationAutocomplete(
-          controller: locationController,
-          onSelected: (value) {},
-          hintText: 'Select Location',
-          onLocationSelected: _updateLocationData,
-          radius: BorderRadius.circular(10),
-          borderColor: _greyBorderColor,
+        child: Column(
+          children: [
+            // Location display field (read-only)
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+              decoration: BoxDecoration(
+                border: Border.all(color: _greyBorderColor),
+                borderRadius: BorderRadius.circular(10),
+                color: Colors.grey[50],
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.location_on_outlined, color: Colors.grey[600], size: 18),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: CustomText(
+                      locationController.text.isEmpty ? 'No location selected' : locationController.text,
+                      color: locationController.text.isEmpty ? Colors.grey[500] : Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: 8),
+            // Coordinates display
+            if (_selectedLatitude != null && _selectedLongitude != null)
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.blue.withValues(alpha: 0.05),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.gps_fixed, color: Colors.blue, size: 16),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          CustomText(
+                            'Latitude: ${_selectedLatitude!.toStringAsFixed(6)}',
+                            fontSize: 12,
+                            color: Colors.blue[700],
+                          ),
+                          CustomText(
+                            'Longitude: ${_selectedLongitude!.toStringAsFixed(6)}',
+                            fontSize: 12,
+                            color: Colors.blue[700],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => _openLocationPicker(),
+                    icon: Icon(Icons.map, size: 18),
+                    label: CustomText('Pick on Map'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: context.color.secondaryColor,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+                SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => _getCurrentLocation(),
+                    icon: Icon(Icons.my_location, size: 18),
+                    label: CustomText('My Location'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       );
 
@@ -784,6 +874,12 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
           if (formatedAddress!.areaId != null) cloudData['area_id'] = formatedAddress!.areaId;
         }
 
+        // Add coordinates if available
+        if (_selectedLatitude != null && _selectedLongitude != null) {
+          cloudData['latitude'] = _selectedLatitude;
+          cloudData['longitude'] = _selectedLongitude;
+        }
+
         // Get main image with compression
         File? mainImage;
         if (_pickTitleImage.pickedFile != null) {
@@ -909,6 +1005,93 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
     // Add debug log
     print("Location updated to: ${locationController.text}");
     print("FormatedAddress: $formatedAddress");
+  }
+
+  // Open location picker with Google Maps
+  void _openLocationPicker() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LocationPickerWidget(
+          title: 'Select Item Location',
+          initialLatitude: _selectedLatitude,
+          initialLongitude: _selectedLongitude,
+          initialAddress: locationController.text.isNotEmpty ? locationController.text : null,
+          onLocationSelected: (latitude, longitude, address) {
+            // Store coordinates
+            _selectedLatitude = latitude;
+            _selectedLongitude = longitude;
+
+            // Update location data
+            Map<String, String> locationData = {};
+            if (address.isNotEmpty) {
+              List<String> parts = address.split(',');
+              if (parts.length >= 1) locationData['city'] = parts[0].trim();
+              if (parts.length >= 2) locationData['state'] = parts[1].trim();
+              if (parts.length >= 3) locationData['country'] = parts[2].trim();
+            }
+
+            // Update the formatted address
+            formatedAddress = AddressComponent(
+              city: locationData['city'] ?? formatedAddress?.city,
+              state: locationData['state'] ?? formatedAddress?.state,
+              country: locationData['country'] ?? formatedAddress?.country,
+              area: locationData['city'] ?? formatedAddress?.area,
+              mixed: address.isNotEmpty ? address : "${locationData['city'] ?? ''}, ${locationData['country'] ?? ''}",
+              areaId: formatedAddress?.areaId,
+            );
+
+            // Update the location controller
+            if (address.isNotEmpty) {
+              locationController.text = address;
+            }
+
+            setState(() {});
+          },
+        ),
+      ),
+    );
+  }
+
+  // Get current location
+  void _getCurrentLocation() async {
+    try {
+      // Show loading indicator
+      HelperUtils.showSnackBarMessage(context, 'Getting your location...');
+
+      // Get current location using the Google Maps service
+      final GoogleMapsService mapsService = GoogleMapsService();
+      final position = await mapsService.getCurrentLocation();
+
+      if (position != null) {
+        // Store coordinates
+        _selectedLatitude = position.latitude;
+        _selectedLongitude = position.longitude;
+
+        // Get address from coordinates
+        final addressData = await mapsService.getAddressFromCoordinates(
+          position.latitude,
+          position.longitude,
+        );
+
+        if (addressData != null) {
+          // Update location data
+          _updateLocationData(addressData);
+
+          // Update the location controller with formatted address
+          String formattedAddress = addressData['formatted_address'] ?? "${addressData['city'] ?? ''}, ${addressData['country'] ?? ''}";
+          locationController.text = formattedAddress;
+
+          HelperUtils.showSnackBarMessage(context, 'Location updated successfully!');
+        } else {
+          HelperUtils.showSnackBarMessage(context, 'Could not get address for current location');
+        }
+      } else {
+        HelperUtils.showSnackBarMessage(context, 'Could not get current location. Please check permissions.');
+      }
+    } catch (e) {
+      HelperUtils.showSnackBarMessage(context, 'Error getting location: $e');
+    }
   }
 
   void _rootListener(BuildContext context, ManageItemState state) {
@@ -1542,19 +1725,96 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
         ),
         SizedBox(height: 10),
 
-        // Location field with autocomplete
+        // Location field (read-only display)
         CustomText("Service Location".translate(context) + " *"),
         SizedBox(height: 8),
-        LocationAutocomplete(
-          controller: locationController,
-          hintText: "enterLocation".translate(context),
-          onSelected: (value) {
-            // Just update the controller, don't call setState() here
-          },
-          onLocationSelected: (locationData) {
-            // Use the shared method to update location data safely
-            _updateLocationData(locationData);
-          },
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
+            borderRadius: BorderRadius.circular(10),
+            color: Colors.grey[50],
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.location_on_outlined, color: Colors.grey[600], size: 18),
+              SizedBox(width: 8),
+              Expanded(
+                child: CustomText(
+                  locationController.text.isEmpty ? 'No location selected' : locationController.text,
+                  color: locationController.text.isEmpty ? Colors.grey[500] : Colors.black87,
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 8),
+        // Coordinates display
+        if (_selectedLatitude != null && _selectedLongitude != null)
+          Container(
+            padding: EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+              borderRadius: BorderRadius.circular(8),
+              color: Colors.blue.withValues(alpha: 0.05),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.gps_fixed, color: Colors.blue, size: 16),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CustomText(
+                        'Latitude: ${_selectedLatitude!.toStringAsFixed(6)}',
+                        fontSize: 12,
+                        color: Colors.blue[700],
+                      ),
+                      CustomText(
+                        'Longitude: ${_selectedLongitude!.toStringAsFixed(6)}',
+                        fontSize: 12,
+                        color: Colors.blue[700],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () => _openLocationPicker(),
+                icon: Icon(Icons.map, size: 16),
+                label: CustomText('Pick on Map', fontSize: 12),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: context.color.secondaryColor,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(width: 8),
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () => _getCurrentLocation(),
+                icon: Icon(Icons.my_location, size: 16),
+                label: CustomText('My Location', fontSize: 12),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
         SizedBox(height: 15),
 
@@ -1646,17 +1906,96 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
         ),
         SizedBox(height: 10),
 
-        // Location field with autocomplete
+        // Location field (read-only display)
         CustomText("Location".translate(context) + " *"),
         SizedBox(height: 8),
-        LocationAutocomplete(
-          controller: locationController,
-          hintText: "enterLocation".translate(context),
-          onSelected: (value) {},
-          onLocationSelected: (locationData) {
-            // Use the shared method to update location data safely
-            _updateLocationData(locationData);
-          },
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
+            borderRadius: BorderRadius.circular(10),
+            color: Colors.grey[50],
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.location_on_outlined, color: Colors.grey[600], size: 18),
+              SizedBox(width: 8),
+              Expanded(
+                child: CustomText(
+                  locationController.text.isEmpty ? 'No location selected' : locationController.text,
+                  color: locationController.text.isEmpty ? Colors.grey[500] : Colors.black87,
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 8),
+        // Coordinates display
+        if (_selectedLatitude != null && _selectedLongitude != null)
+          Container(
+            padding: EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+              borderRadius: BorderRadius.circular(8),
+              color: Colors.blue.withValues(alpha: 0.05),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.gps_fixed, color: Colors.blue, size: 16),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CustomText(
+                        'Latitude: ${_selectedLatitude!.toStringAsFixed(6)}',
+                        fontSize: 12,
+                        color: Colors.blue[700],
+                      ),
+                      CustomText(
+                        'Longitude: ${_selectedLongitude!.toStringAsFixed(6)}',
+                        fontSize: 12,
+                        color: Colors.blue[700],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () => _openLocationPicker(),
+                icon: Icon(Icons.map, size: 16),
+                label: CustomText('Pick on Map', fontSize: 12),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: context.color.secondaryColor,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(width: 8),
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () => _getCurrentLocation(),
+                icon: Icon(Icons.my_location, size: 16),
+                label: CustomText('My Location', fontSize: 12),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
         SizedBox(height: 15),
       ],
@@ -1920,6 +2259,11 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
       }
     }
 
+    // Coordinates check
+    if (_selectedLatitude == null || _selectedLongitude == null) {
+      missingFields.add("Location Coordinates");
+    }
+
     // For experience type, check expiration date and time
     if (postType == PostType.experience) {
       if (_expirationDate == null && !(isEdit && item?.expirationDate != null)) {
@@ -1963,6 +2307,12 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
         if (item.city != null) 'city': item.city!,
         if (item.state != null) 'state': item.state!,
       });
+    }
+
+    // Initialize coordinates from existing item
+    if (item.latitude != null && item.longitude != null) {
+      _selectedLatitude = item.latitude;
+      _selectedLongitude = item.longitude;
     }
     _locationTypes = (item.locationType ?? []).toSet();
     _specialTags = item.specialTags?.map((key, value) => MapEntry(key, value == 'true' || value == true)) ?? {};

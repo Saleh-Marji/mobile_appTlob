@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:tlobni/app/app_theme.dart';
 import 'package:tlobni/data/model/item/item_model.dart';
 import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
 import 'package:tlobni/ui/theme/theme.dart';
+import 'package:tlobni/ui/widgets/buttons/unelevated_regular_button.dart';
 import 'package:tlobni/utils/custom_text.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/google_maps_service.dart';
 import 'package:tlobni/utils/helper_utils.dart';
 import 'package:tlobni/utils/ui_utils.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ItemLocationScreen extends StatefulWidget {
   final ItemModel item;
@@ -71,9 +73,7 @@ class _ItemLocationScreenState extends State<ItemLocationScreen> {
         // Add nearby items markers if available
         if (widget.showNearbyItems && widget.nearbyItems != null) {
           for (ItemModel nearbyItem in widget.nearbyItems!) {
-            if (nearbyItem.id != widget.item.id && 
-                nearbyItem.latitude != null && 
-                nearbyItem.longitude != null) {
+            if (nearbyItem.id != widget.item.id && nearbyItem.latitude != null && nearbyItem.longitude != null) {
               _addItemMarker(nearbyItem, isMainItem: false);
             }
           }
@@ -99,7 +99,7 @@ class _ItemLocationScreenState extends State<ItemLocationScreen> {
   }
 
   void _addItemMarker(ItemModel item, {required bool isMainItem}) {
-    BitmapDescriptor icon = isMainItem 
+    BitmapDescriptor icon = isMainItem
         ? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed)
         : BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue);
 
@@ -300,12 +300,12 @@ class _ItemLocationScreenState extends State<ItemLocationScreen> {
         actions: [
           IconButton(
             onPressed: _centerOnItem,
-            icon: Icon(Icons.center_focus_strong),
+            icon: Icon(Icons.center_focus_strong, color: kColorNavyBlue),
             tooltip: 'Center on item',
           ),
           IconButton(
             onPressed: _centerOnUserLocation,
-            icon: Icon(Icons.my_location),
+            icon: Icon(Icons.my_location, color: kColorNavyBlue),
             tooltip: 'My location',
           ),
         ],
@@ -313,7 +313,7 @@ class _ItemLocationScreenState extends State<ItemLocationScreen> {
       body: Stack(
         children: [
           if (_isLoading || _cameraPosition == null)
-            Center(child: CircularProgressIndicator())
+            Center(child: CircularProgressIndicator(color: kColorNavyBlue))
           else
             GoogleMap(
               initialCameraPosition: _cameraPosition!,
@@ -353,58 +353,53 @@ class _ItemLocationScreenState extends State<ItemLocationScreen> {
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          CustomText(
+          Text(
             widget.item.name ?? 'Unknown Item',
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
+            style: context.textTheme.bodyMedium?.copyWith(
+              color: kColorNavyBlue,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           SizedBox(height: 8),
           if (widget.item.address != null)
-            CustomText(
+            Text(
               widget.item.address!,
-              color: Colors.grey[600],
+              style: context.textTheme.bodyMedium?.copyWith(
+                color: kColorNavyBlue.withOpacity(0.8),
+              ),
             ),
           if (widget.item.latitude != null && widget.item.longitude != null) ...[
             SizedBox(height: 4),
-            CustomText(
+            Text(
               'Coordinates: ${widget.item.latitude!.toStringAsFixed(6)}, ${widget.item.longitude!.toStringAsFixed(6)}',
-              color: Colors.grey[500],
-              fontSize: 12,
+              style: context.textTheme.bodySmall?.copyWith(
+                color: kColorNavyBlue.withOpacity(0.6),
+              ),
             ),
           ],
           SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () => _getDirections(widget.item),
-                  icon: Icon(Icons.directions, size: 18),
-                  label: CustomText('Directions'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: context.color.secondaryColor,
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-              ),
-              SizedBox(width: 8),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () => _openInMaps(widget.item),
-                  icon: Icon(Icons.map, size: 18),
-                  label: CustomText('Open Maps'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-              ),
-            ],
+          UnelevatedRegularButton(
+            onPressed: () => _openInMaps(widget.item),
+            padding: EdgeInsets.all(10),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(3)),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.map, size: 18, color: kColorSecondaryBeige),
+                SizedBox(width: 8),
+                Flexible(
+                    child: Text(
+                  'Open Maps',
+                  style: context.textTheme.bodySmall?.copyWith(color: kColorSecondaryBeige),
+                )),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
-} 
+}

@@ -365,10 +365,14 @@ class SellerProfileScreenState extends State<SellerProfileScreen> with SingleTic
                     },
                     child: Row(
                       children: [
-                        Icon(icon, color: Colors.grey.shade600),
+                        Icon(icon, color: kColorNavyBlue),
                         SizedBox(width: 10),
-                        Expanded(child: DescriptionText(text!, color: Colors.grey.shade600)),
-                        if (canLaunch) Icon(Icons.open_in_new, color: context.color.primary),
+                        Expanded(
+                            child: Text(
+                          text!,
+                          style: context.textTheme.bodyMedium?.copyWith(color: kColorNavyBlue),
+                        )),
+                        if (canLaunch) Icon(Icons.open_in_new, color: kColorNavyBlue),
                       ],
                     ),
                   );
@@ -376,6 +380,61 @@ class SellerProfileScreenState extends State<SellerProfileScreen> with SingleTic
               ),
             );
           }),
+        if (user.latitude != null && user.longitude != null)
+          _aboutSection(
+            'Location',
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                border: Border.all(color: kColorNavyBlue.withValues(alpha: 0.3)),
+                borderRadius: BorderRadius.circular(8),
+                color: kColorNavyBlue.withValues(alpha: 0.05),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.gps_fixed, color: kColorNavyBlue, size: 16),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (user.location != null)
+                          Text(
+                            user.location!,
+                            style: context.textTheme.bodyMedium?.copyWith(
+                              color: kColorNavyBlue.withOpacity(0.8),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                  UnelevatedRegularButton(
+                    onPressed: () => _openUserLocationOnMaps(user),
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    color: kColorNavyBlue,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.map, color: Colors.white, size: 14),
+                        SizedBox(width: 4),
+                        Text(
+                          'View Location',
+                          style: context.textTheme.bodySmall?.copyWith(
+                            color: Colors.white,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         Builder(builder: (context) {
           final socialMedia = <(Color, IconData, String)>[];
           if (user.instagram != null) socialMedia.add((Color(0xffc13584), SocialMediaIcons.instagram, user.instagram!));
@@ -1903,6 +1962,18 @@ class SellerProfileScreenState extends State<SellerProfileScreen> with SingleTic
       context.read<FetchSellerItemsCubit>().fetch(sellerId: widget.model.id!);
       context.read<FetchSellerRatingsCubit>().fetch(sellerId: widget.model.id!);
       context.read<UserHasRatedUserCubit>().userHasRatedUser(ratedUserId: widget.model.id!);
+    }
+  }
+
+  void _openUserLocationOnMaps(User user) {
+    if (user.latitude != null && user.longitude != null) {
+      Navigator.pushNamed(
+        context,
+        Routes.userLocationScreen,
+        arguments: {
+          'user': user,
+        },
+      );
     }
   }
 }

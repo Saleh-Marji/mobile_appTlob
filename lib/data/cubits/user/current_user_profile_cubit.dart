@@ -67,6 +67,8 @@ class CurrentUserProfileCubit extends Cubit<CurrentUserProfileState> {
     String? tiktok,
     String? gender,
     int? personalDetail,
+    double? latitude,
+    double? longitude,
   }) async {
     emit(CurrentUserProfileFetchProgress());
     Map<String, dynamic> parameters = {
@@ -88,6 +90,8 @@ class CurrentUserProfileCubit extends Cubit<CurrentUserProfileState> {
       'twitter': twitter ?? '',
       'instagram': instagram ?? '',
       'tiktok': tiktok ?? '',
+      'latitude': latitude,
+      'longitude': longitude,
     };
     if (fileUserimg != null) {
       parameters['profile'] = await MultipartFile.fromFile(fileUserimg.path);

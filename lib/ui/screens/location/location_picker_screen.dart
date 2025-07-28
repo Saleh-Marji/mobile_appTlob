@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:tlobni/app/app_theme.dart';
 import 'package:tlobni/data/model/google_place_model.dart';
 import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
 import 'package:tlobni/ui/theme/theme.dart';
@@ -256,10 +257,12 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
           if (_selectedLatitude != null && _selectedLongitude != null)
             TextButton(
               onPressed: _confirmLocation,
-              child: CustomText(
+              child: Text(
                 'Confirm',
-                color: context.color.secondaryColor,
-                fontWeight: FontWeight.bold,
+                style: context.textTheme.bodyMedium?.copyWith(
+                  color: kColorNavyBlue,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
         ],
@@ -276,7 +279,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _getCurrentLocation,
-        backgroundColor: context.color.secondaryColor,
+        backgroundColor: kColorNavyBlue,
         child: Icon(
           Icons.my_location,
           color: Colors.white,
@@ -291,21 +294,35 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       child: TextField(
         controller: _searchController,
         focusNode: _searchFocusNode,
+        style: context.textTheme.bodyMedium?.copyWith(color: kColorNavyBlue),
         decoration: InputDecoration(
           hintText: 'Search for a place...',
-          prefixIcon: Icon(Icons.search),
+          hintStyle: context.textTheme.bodyMedium?.copyWith(color: kColorNavyBlue.withOpacity(0.6)),
+          prefixIcon: Icon(Icons.search, color: kColorNavyBlue),
           suffixIcon: _isSearching
               ? Padding(
                   padding: EdgeInsets.all(12),
                   child: SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(kColorNavyBlue),
+                    ),
                   ),
                 )
               : null,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: kColorNavyBlue.withOpacity(0.3)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: kColorNavyBlue.withOpacity(0.3)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: kColorNavyBlue, width: 2),
           ),
           filled: true,
           fillColor: Colors.grey[100],
@@ -334,9 +351,15 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
         itemBuilder: (context, index) {
           GooglePlaceModel place = _searchResults[index];
           return ListTile(
-            leading: Icon(Icons.location_on, color: context.color.secondaryColor),
-            title: CustomText(place.city),
-            subtitle: CustomText(place.description),
+            leading: Icon(Icons.location_on, color: kColorNavyBlue),
+            title: Text(
+              place.city,
+              style: context.textTheme.bodyMedium?.copyWith(color: kColorNavyBlue),
+            ),
+            subtitle: Text(
+              place.description,
+              style: context.textTheme.bodySmall?.copyWith(color: kColorNavyBlue.withOpacity(0.7)),
+            ),
             onTap: () => _selectPlace(place),
           );
         },
@@ -368,6 +391,10 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
           markers: _markers,
           onMapCreated: (GoogleMapController controller) {
             _mapController = controller;
+            print('Google Map created successfully');
+          },
+          onCameraMove: (CameraPosition position) {
+            print('Camera moved to: ${position.target}');
           },
           onTap: (LatLng position) async {
             _selectedLatitude = position.latitude;
@@ -403,22 +430,27 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CustomText(
+          Text(
             'Selected Location',
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
+            style: context.textTheme.bodyMedium?.copyWith(
+              color: kColorNavyBlue,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           SizedBox(height: 8),
-          CustomText(
+          Text(
             _selectedAddress ?? 'Address not available',
-            color: Colors.grey[600],
+            style: context.textTheme.bodyMedium?.copyWith(
+              color: kColorNavyBlue.withOpacity(0.8),
+            ),
           ),
           if (_selectedLatitude != null && _selectedLongitude != null) ...[
             SizedBox(height: 4),
-            CustomText(
+            Text(
               'Coordinates: ${_selectedLatitude!.toStringAsFixed(6)}, ${_selectedLongitude!.toStringAsFixed(6)}',
-              color: Colors.grey[500],
-              fontSize: 12,
+              style: context.textTheme.bodySmall?.copyWith(
+                color: kColorNavyBlue.withOpacity(0.6),
+              ),
             ),
           ],
         ],

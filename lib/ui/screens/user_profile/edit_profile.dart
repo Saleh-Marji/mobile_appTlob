@@ -11,11 +11,11 @@ import 'package:tlobni/data/cubits/category/fetch_all_categories_cubit.dart';
 import 'package:tlobni/data/cubits/user/current_user_profile_cubit.dart';
 import 'package:tlobni/data/model/category_model.dart';
 import 'package:tlobni/data/model/item/item_model.dart';
-import 'package:tlobni/ui/screens/item/add_item_screen/widgets/location_autocomplete.dart';
 import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
 import 'package:tlobni/ui/screens/widgets/image_cropper.dart';
 import 'package:tlobni/ui/theme/theme.dart';
 import 'package:tlobni/ui/widgets/buttons/unelevated_regular_button.dart';
+import 'package:tlobni/ui/widgets/location_picker_widget.dart';
 import 'package:tlobni/ui/widgets/text/description_text.dart';
 import 'package:tlobni/ui/widgets/text/heading_text.dart';
 import 'package:tlobni/utils/app_icon.dart';
@@ -495,25 +495,96 @@ class UserProfileScreenState extends State<UserProfileScreen> {
 
   Widget _location() => _section(
         'Location',
-        LocationAutocomplete(
-          controller: locationController,
-          onSelected: (_) {},
-          fillColor: _textFieldFillColor,
-          radius: BorderRadius.circular(8),
-          borderColor: _sectionBorderColor,
-          hintText: 'Select your location',
-          onLocationSelected: (data) {
-            if (!mounted) return;
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              setState(() {
-                city = data['city'];
-                state = data['state'];
-                country = data['country'];
-              });
+        UnelevatedRegularButton(
+          onPressed: () => _openLocationPicker(),
+          padding: const EdgeInsets.all(16),
+          color: _textFieldFillColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+            side: BorderSide(color: _sectionBorderColor),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.location_on, color: context.color.primary),
+              SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (locationController.text.isNotEmpty) ...[
+                      Text(
+                        'Selected Location',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: context.color.primary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        locationController.text,
+                        style: context.textTheme.bodyMedium,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ] else ...[
+                      Text(
+                        'Select your location',
+                        style: context.textTheme.bodyMedium?.copyWith(
+                          color: context.color.primary.withValues(alpha: 0.6),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: context.color.textColorDark,
+              ),
+            ],
+          ),
+        ),
+      );
+
+  void _openLocationPicker() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LocationPickerWidget(
+          title: 'Select Your Location',
+          initialLatitude: latitude,
+          initialLongitude: longitude,
+          initialAddress: locationController.text,
+          showSearchBar: true,
+          onLocationSelected: (lat, lng, address) {
+            setState(() {
+              latitude = lat;
+              longitude = lng;
+
+              // Extract location components from address if possible
+              List<String> addressParts = address.split(', ');
+              if (addressParts.length >= 3) {
+                city = addressParts[addressParts.length - 3];
+                state = addressParts[addressParts.length - 2];
+                country = addressParts[addressParts.length - 1];
+              } else if (addressParts.length >= 2) {
+                city = addressParts[addressParts.length - 2];
+                state = null;
+                country = addressParts[addressParts.length - 1];
+              } else {
+                city = address;
+                state = null;
+                country = null;
+              }
+              locationController.text = country != null ? '$city, $country' : city ?? '';
             });
           },
         ),
-      );
+      ),
+    );
+  }
 
   Widget _notificationSwitch() =>
       _switchSection('Notifications', isNotificationsEnabled, (val) => setState(() => isNotificationsEnabled = val));
@@ -524,7 +595,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
   List<Widget> _basicInfoBody() => [
         _profilePicture(),
         _fullName(),
-        if(_type != UserType.business) _gender(),
+        if (_type != UserType.business) _gender(),
         if (_type != UserType.client) _phoneNumber(),
         _location(),
         _notificationSwitch(),
@@ -658,6 +729,8 @@ class UserProfileScreenState extends State<UserProfileScreen> {
           twitter: twitterController.text.trim(),
           instagram: instagramController.text.trim(),
           tiktok: tiktokController.text.trim(),
+          latitude: latitude,
+          longitude: longitude,
         );
   }
 

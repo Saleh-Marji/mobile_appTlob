@@ -468,20 +468,6 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
                   if (HiveUtils.isUserAuthenticated()) ...[
                     customTile(
                       context,
-                      title: "My Location",
-                      svgImagePath: AppIcons.location,
-                      onTap: () {
-                        Navigator.pushNamed(
-                          context,
-                          Routes.userLocationScreen,
-                          arguments: {
-                            'isCurrentUser': true,
-                          },
-                        );
-                      },
-                    ),
-                    customTile(
-                      context,
                       title: "deleteAccount".translate(context),
                       svgImagePath: AppIcons.delete,
                       onTap: () {
