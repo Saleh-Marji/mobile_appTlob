@@ -34,6 +34,8 @@ import 'package:tlobni/ui/screens/item/view_all_screen.dart';
 import 'package:tlobni/ui/screens/location/areas_screen.dart';
 import 'package:tlobni/ui/screens/location/cities_screen.dart';
 import 'package:tlobni/ui/screens/location/countries_screen.dart';
+import 'package:tlobni/ui/screens/location/item_location_screen.dart';
+import 'package:tlobni/ui/screens/location/location_picker_screen.dart';
 import 'package:tlobni/ui/screens/location/nearby_location.dart';
 import 'package:tlobni/ui/screens/location/states_screen.dart';
 import 'package:tlobni/ui/screens/location_permission_screen.dart';
@@ -53,9 +55,6 @@ import 'package:tlobni/ui/screens/sub_category/sub_category_screen.dart';
 import 'package:tlobni/ui/screens/subscription/packages_list.dart';
 import 'package:tlobni/ui/screens/subscription/transaction_history_screen.dart';
 import 'package:tlobni/ui/screens/user_profile/edit_profile.dart';
-import 'package:tlobni/ui/screens/user_profile/user_location_screen.dart';
-import 'package:tlobni/ui/screens/location/location_picker_screen.dart';
-import 'package:tlobni/ui/screens/location/item_location_screen.dart';
 import 'package:tlobni/ui/screens/welcome/welcome_screen.dart';
 import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
 import 'package:tlobni/ui/screens/widgets/maintenance_mode.dart';
@@ -149,7 +148,7 @@ class Routes {
 
   // Add the new route constant
   static const featuredUsersScreen = '/featuredUsersScreen';
-  
+
   // Google Maps related routes
   static const locationPickerScreen = '/locationPickerScreen';
   static const itemLocationScreen = '/itemLocationScreen';
@@ -317,8 +316,6 @@ class Routes {
         return LocationPickerScreen.route(routeSettings);
       case itemLocationScreen:
         return ItemLocationScreen.route(routeSettings);
-      case userLocationScreen:
-        return UserLocationScreen.route(routeSettings);
 
       default:
         return CupertinoPageRoute(builder: (context) => const Scaffold());

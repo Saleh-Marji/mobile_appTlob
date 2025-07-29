@@ -1969,9 +1969,13 @@ class SellerProfileScreenState extends State<SellerProfileScreen> with SingleTic
     if (user.latitude != null && user.longitude != null) {
       Navigator.pushNamed(
         context,
-        Routes.userLocationScreen,
+        Routes.itemLocationScreen,
         arguments: {
-          'user': user,
+          'latitude': user.latitude,
+          'longitude': user.longitude,
+          'name': user.name,
+          'city': user.city,
+          'country': user.country,
         },
       );
     }

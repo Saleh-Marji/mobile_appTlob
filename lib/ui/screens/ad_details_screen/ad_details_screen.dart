@@ -1050,7 +1050,11 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> with AdDetailsMix
         context,
         Routes.itemLocationScreen,
         arguments: {
-          "item": model,
+          'latitude': model.latitude,
+          'longitude': model.longitude,
+          'name': model.name,
+          'city': model.city,
+          'country': model.country,
         },
       );
     }

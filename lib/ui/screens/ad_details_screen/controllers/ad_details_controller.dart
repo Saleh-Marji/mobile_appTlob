@@ -4,10 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
-
 import 'package:tlobni/app/routes.dart';
-import 'package:tlobni/data/cubits/auth/delete_user_cubit.dart';
-import 'package:tlobni/data/cubits/chat/get_buyer_chat_users_cubit.dart';
 import 'package:tlobni/data/cubits/chat/make_an_offer_item_cubit.dart';
 import 'package:tlobni/data/cubits/favorite/favorite_cubit.dart';
 import 'package:tlobni/data/cubits/favorite/manage_fav_cubit.dart';
@@ -17,15 +14,10 @@ import 'package:tlobni/data/cubits/item/fetch_item_reviews_cubit.dart';
 import 'package:tlobni/data/cubits/item/fetch_my_item_cubit.dart';
 import 'package:tlobni/data/cubits/item/item_total_click_cubit.dart';
 import 'package:tlobni/data/cubits/item/related_item_cubit.dart';
-import 'package:tlobni/data/cubits/renew_item_cubit.dart';
 import 'package:tlobni/data/cubits/report/fetch_item_report_reason_list.dart';
-import 'package:tlobni/data/cubits/report/item_report_cubit.dart';
-import 'package:tlobni/data/cubits/report/update_report_items_list_cubit.dart';
 import 'package:tlobni/data/cubits/safety_tips_cubit.dart';
 import 'package:tlobni/data/cubits/seller/fetch_seller_ratings_cubit.dart';
 import 'package:tlobni/data/cubits/subscription/fetch_ads_listing_subscription_packages_cubit.dart';
-import 'package:tlobni/data/cubits/subscription/fetch_user_package_limit_cubit.dart';
-import 'package:tlobni/data/cubits/user_has_rated_item_cubit.dart';
 import 'package:tlobni/data/helper/widgets.dart';
 import 'package:tlobni/data/model/item/item_model.dart';
 import 'package:tlobni/ui/screens/widgets/blurred_dialoge_box.dart';
@@ -41,8 +33,8 @@ class AdDetailsController {
       context.read<FetchItemReportReasonsListCubit>().fetch();
       context.read<FetchSafetyTipsListCubit>().fetchSafetyTips();
       context.read<FetchSellerRatingsCubit>().fetch(
-        sellerId: (itemModel.user?.id != null ? itemModel.user!.id! : itemModel.userId!),
-      );
+            sellerId: (itemModel.user?.id != null ? itemModel.user!.id! : itemModel.userId!),
+          );
 
       if (itemModel.id != null) {
         context.read<FetchItemReviewsCubit>().fetchItemReviews(itemId: itemModel.id!);
@@ -55,7 +47,7 @@ class AdDetailsController {
     _fetchRelatedItems(context, itemModel);
   }
 
-  static bool _isItemAddedByMe(ItemModel model) => 
+  static bool _isItemAddedByMe(ItemModel model) =>
       (model.user?.id != null ? model.user!.id.toString() : model.userId) == HiveUtils.getUserId();
 
   static void _setItemClick(BuildContext context, ItemModel model) {
@@ -68,12 +60,12 @@ class AdDetailsController {
     int? categoryId = model.category != null ? model.category?.id : model.categoryId;
     if (categoryId != null) {
       context.read<FetchRelatedItemsCubit>().fetchRelatedItems(
-        categoryId: categoryId,
-        city: HiveUtils.getCityName(),
-        areaId: HiveUtils.getAreaId(),
-        country: HiveUtils.getCountryName(),
-        state: HiveUtils.getStateName(),
-      );
+            categoryId: categoryId,
+            city: HiveUtils.getCityName(),
+            areaId: HiveUtils.getAreaId(),
+            country: HiveUtils.getCountryName(),
+            state: HiveUtils.getStateName(),
+          );
     }
   }
 
@@ -87,8 +79,7 @@ class AdDetailsController {
     } else if (state is FetchItemFromSlugFailure) {
       if (state.errorMessage.contains("no-internet")) {
         HelperUtils.showSnackBarMessage(context, "noInternet".translate(context));
-      } else if (!state.errorMessage.contains("unexpected-error") && 
-                 !state.errorMessage.contains("session-expired")) {
+      } else if (!state.errorMessage.contains("unexpected-error") && !state.errorMessage.contains("session-expired")) {
         log("Error ignored during refresh: ${state.errorMessage}");
       }
     }
@@ -150,9 +141,9 @@ class AdDetailsController {
     UiUtils.checkUser(
       onNotGuest: () {
         context.read<UpdateFavoriteCubit>().setFavoriteItem(
-          item: model,
-          type: isLike ? 0 : 1,
-        );
+              item: model,
+              type: isLike ? 0 : 1,
+            );
       },
       context: context,
     );
@@ -187,7 +178,7 @@ class AdDetailsController {
 
   static void onDeletePressed(BuildContext context, ItemModel model) async {
     if (model.id == null) return;
-    
+
     var delete = await UiUtils.showBlurredDialoge(
       context,
       dialoge: BlurredDialogBox(
@@ -195,7 +186,7 @@ class AdDetailsController {
         content: CustomText("deleteitemwarning".translate(context)),
       ),
     );
-    
+
     if (delete == true) {
       Future.delayed(
         Duration.zero,
@@ -218,23 +209,15 @@ class AdDetailsController {
 
   static String buildFullAddress(ItemModel model) {
     List<String> addressParts = [];
-    
-    if (model.address != null && model.address!.isNotEmpty) {
-      addressParts.add(model.address!);
-    }
-    
+
     if (model.city != null && model.city!.isNotEmpty) {
       addressParts.add(model.city!);
     }
-    
-    if (model.state != null && model.state!.isNotEmpty) {
-      addressParts.add(model.state!);
-    }
-    
+
     if (model.country != null && model.country!.isNotEmpty) {
       addressParts.add(model.country!);
     }
-    
+
     String fullAddress = addressParts.join(', ');
     return fullAddress.isNotEmpty ? fullAddress : 'Location not specified';
   }
@@ -271,8 +254,7 @@ class AdDetailsController {
     }
   }
 
-  static String formatExperienceDateTime(DateTime? dateTime) => 
-      dateTime != null ? DateFormat('MMMM d, y, h:mm a').format(dateTime) : '';
+  static String formatExperienceDateTime(DateTime? dateTime) => dateTime != null ? DateFormat('MMMM d, y, h:mm a').format(dateTime) : '';
 
   static bool isItemAddedByMe(ItemModel model) => _isItemAddedByMe(model);
 
@@ -292,20 +274,20 @@ class AdDetailsController {
       if (slug != null) {
         context.read<FetchItemFromSlugCubit>().fetchItemFromSlug(slug: slug);
       }
-      
+
       initVariables(context, model);
-      
+
       if (categoryId != null) {
         context.read<FetchRelatedItemsCubit>().fetchRelatedItems(
-          categoryId: categoryId,
-          city: HiveUtils.getCityName(),
-          areaId: HiveUtils.getAreaId(),
-          country: HiveUtils.getCountryName(),
-          state: HiveUtils.getStateName(),
-        );
+              categoryId: categoryId,
+              city: HiveUtils.getCityName(),
+              areaId: HiveUtils.getAreaId(),
+              country: HiveUtils.getCountryName(),
+              state: HiveUtils.getStateName(),
+            );
       }
     } catch (e) {
       log('Error refreshing data: $e');
     }
   }
-} 
+}

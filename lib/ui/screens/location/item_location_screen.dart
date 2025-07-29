@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:tlobni/app/app_theme.dart';
-import 'package:tlobni/data/model/item/item_model.dart';
 import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
-import 'package:tlobni/ui/theme/theme.dart';
 import 'package:tlobni/ui/widgets/buttons/unelevated_regular_button.dart';
-import 'package:tlobni/utils/custom_text.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/google_maps_service.dart';
 import 'package:tlobni/utils/helper_utils.dart';
@@ -13,24 +10,21 @@ import 'package:tlobni/utils/ui_utils.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ItemLocationScreen extends StatefulWidget {
-  final ItemModel item;
-  final List<ItemModel>? nearbyItems;
-  final bool showNearbyItems;
+  final double? longitude, latitude;
+  final String? city, country, name;
 
-  const ItemLocationScreen({
-    Key? key,
-    required this.item,
-    this.nearbyItems,
-    this.showNearbyItems = false,
-  }) : super(key: key);
+  const ItemLocationScreen({Key? key, required this.longitude, required this.latitude, this.city, this.country, this.name})
+      : super(key: key);
 
   static Route route(RouteSettings settings) {
     Map? arguments = settings.arguments as Map?;
     return BlurredRouter(
       builder: (context) => ItemLocationScreen(
-        item: arguments?['item'],
-        nearbyItems: arguments?['nearbyItems'],
-        showNearbyItems: arguments?['showNearbyItems'] ?? false,
+        longitude: arguments?['longitude'],
+        latitude: arguments?['latitude'],
+        city: arguments?['city'],
+        country: arguments?['country'],
+        name: arguments?['name'],
       ),
     );
   }
@@ -46,6 +40,12 @@ class _ItemLocationScreenState extends State<ItemLocationScreen> {
   CameraPosition? _cameraPosition;
   bool _isLoading = true;
 
+  double? get latitude => widget.latitude;
+  double? get longitude => widget.longitude;
+  String? get name => widget.name;
+  String? get city => widget.city;
+  String? get country => widget.country;
+
   @override
   void initState() {
     super.initState();
@@ -60,30 +60,22 @@ class _ItemLocationScreenState extends State<ItemLocationScreen> {
 
   Future<void> _initializeMap() async {
     try {
-      if (widget.item.latitude != null && widget.item.longitude != null) {
-        // Set camera position to item location
+      double? latitude = this.latitude, longitude = this.longitude;
+      if (latitude != null && longitude != null) {
+        // Set camera position to location
         _cameraPosition = CameraPosition(
-          target: LatLng(widget.item.latitude!, widget.item.longitude!),
+          target: LatLng(latitude, longitude),
           zoom: 15.0,
         );
 
-        // Add main item marker
-        _addItemMarker(widget.item, isMainItem: true);
-
-        // Add nearby items markers if available
-        if (widget.showNearbyItems && widget.nearbyItems != null) {
-          for (ItemModel nearbyItem in widget.nearbyItems!) {
-            if (nearbyItem.id != widget.item.id && nearbyItem.latitude != null && nearbyItem.longitude != null) {
-              _addItemMarker(nearbyItem, isMainItem: false);
-            }
-          }
-        }
+        // Add marker
+        _addLocationMarker(latitude, longitude, name!);
 
         setState(() {
           _isLoading = false;
         });
       } else {
-        // Use default location if item has no coordinates
+        // Use default location if no coordinates
         _cameraPosition = _mapsService.getDefaultCameraPosition();
         setState(() {
           _isLoading = false;
@@ -98,18 +90,15 @@ class _ItemLocationScreenState extends State<ItemLocationScreen> {
     }
   }
 
-  void _addItemMarker(ItemModel item, {required bool isMainItem}) {
-    BitmapDescriptor icon = isMainItem
-        ? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed)
-        : BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue);
+  void _addLocationMarker(double latitude, double longitude, String name) {
+    String snippet = 'Location';
 
     Marker marker = _mapsService.createMarker(
-      markerId: 'item_${item.id}',
-      position: LatLng(item.latitude!, item.longitude!),
-      title: item.name,
-      snippet: '${item.price} ${item.priceType}',
-      icon: icon,
-      onTap: () => _showItemInfo(item),
+      markerId: 'location_marker',
+      position: LatLng(latitude, longitude),
+      title: name,
+      snippet: snippet,
+      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
     );
 
     setState(() {
@@ -117,136 +106,17 @@ class _ItemLocationScreenState extends State<ItemLocationScreen> {
     });
   }
 
-  void _showItemInfo(ItemModel item) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Container(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            CustomText(
-              item.name ?? 'Unknown Item',
-              fontWeight: FontWeight.bold,
-              fontSize: 18,
-            ),
-            SizedBox(height: 8),
-            if (item.price != null)
-              CustomText(
-                'Price: ${item.price} ${item.priceType}',
-                color: context.color.secondaryColor,
-                fontWeight: FontWeight.w600,
-              ),
-            SizedBox(height: 8),
-            if (item.address != null)
-              CustomText(
-                'Address: ${item.address}',
-                color: Colors.grey[600],
-              ),
-            SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => _getDirections(item),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: context.color.secondaryColor,
-                    ),
-                    child: CustomText(
-                      'Get Directions',
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-                SizedBox(width: 8),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => _openInMaps(item),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                    ),
-                    child: CustomText(
-                      'Open in Maps',
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Future<void> _openInMaps() async {
+    double? latitude = this.latitude;
+    double? longitude = this.longitude;
 
-  Future<void> _getDirections(ItemModel item) async {
-    try {
-      // Get current user location
-      var userLocation = _mapsService.getUserLocation();
-      double? userLat = userLocation['latitude'];
-      double? userLng = userLocation['longitude'];
-
-      if (userLat == null || userLng == null) {
-        HelperUtils.showSnackBarMessage(context, 'Please set your location first');
-        return;
-      }
-
-      if (item.latitude == null || item.longitude == null) {
-        HelperUtils.showSnackBarMessage(context, 'Item location not available');
-        return;
-      }
-
-      // Calculate distance and estimated time
-      Map<String, dynamic>? directions = await _mapsService.getDirections(
-        originLat: userLat,
-        originLng: userLng,
-        destinationLat: item.latitude!,
-        destinationLng: item.longitude!,
-      );
-
-      if (directions != null) {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: CustomText('Directions'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                CustomText('Distance: ${directions['distance_text']}'),
-                CustomText('Estimated Time: ${directions['duration_text']}'),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: CustomText('Close'),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _openInMaps(item);
-                },
-                child: CustomText('Open in Maps'),
-              ),
-            ],
-          ),
-        );
-      }
-    } catch (e) {
-      HelperUtils.showSnackBarMessage(context, 'Error getting directions: $e');
-    }
-  }
-
-  Future<void> _openInMaps(ItemModel item) async {
-    if (item.latitude == null || item.longitude == null) {
-      HelperUtils.showSnackBarMessage(context, 'Item location not available');
+    if (latitude == null || longitude == null) {
+      HelperUtils.showSnackBarMessage(context, 'Location not available');
       return;
     }
 
     try {
-      String url = 'https://www.google.com/maps/search/?api=1&query=${item.latitude},${item.longitude}';
+      String url = 'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude';
       if (await canLaunchUrl(Uri.parse(url))) {
         await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
       } else {
@@ -257,12 +127,15 @@ class _ItemLocationScreenState extends State<ItemLocationScreen> {
     }
   }
 
-  void _centerOnItem() {
-    if (widget.item.latitude != null && widget.item.longitude != null) {
+  void _centerOnLocation() {
+    double? latitude = this.latitude;
+    double? longitude = this.longitude;
+
+    if (latitude != null && longitude != null) {
       _mapController?.animateCamera(
         CameraUpdate.newCameraPosition(
           CameraPosition(
-            target: LatLng(widget.item.latitude!, widget.item.longitude!),
+            target: LatLng(latitude, longitude),
             zoom: 15.0,
           ),
         ),
@@ -270,7 +143,7 @@ class _ItemLocationScreenState extends State<ItemLocationScreen> {
     }
   }
 
-  void _centerOnUserLocation() async {
+  void _centerOnCurrentLocation() async {
     try {
       var position = await _mapsService.getCurrentLocation();
       if (position != null) {
@@ -292,19 +165,21 @@ class _ItemLocationScreenState extends State<ItemLocationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    String title = 'Location';
+
     return Scaffold(
       appBar: UiUtils.buildAppBar(
         context,
-        title: 'Item Location',
+        title: title,
         showBackButton: true,
         actions: [
           IconButton(
-            onPressed: _centerOnItem,
+            onPressed: _centerOnLocation,
             icon: Icon(Icons.center_focus_strong, color: kColorNavyBlue),
-            tooltip: 'Center on item',
+            tooltip: 'Center on location',
           ),
           IconButton(
-            onPressed: _centerOnUserLocation,
+            onPressed: _centerOnCurrentLocation,
             icon: Icon(Icons.my_location, color: kColorNavyBlue),
             tooltip: 'My location',
           ),
@@ -326,7 +201,7 @@ class _ItemLocationScreenState extends State<ItemLocationScreen> {
               zoomControlsEnabled: false,
               mapToolbarEnabled: false,
             ),
-          if (!_isLoading && widget.item.latitude != null && widget.item.longitude != null)
+          if (!_isLoading && _markers.isNotEmpty)
             Positioned(
               bottom: 16,
               left: 16,
@@ -339,6 +214,15 @@ class _ItemLocationScreenState extends State<ItemLocationScreen> {
   }
 
   Widget _buildLocationInfo() {
+    double? latitude = this.latitude;
+    double? longitude = this.longitude;
+    String? name = this.name;
+    String? address = this.country == null
+        ? this.city
+        : this.city == null
+            ? this.country
+            : '${this.city}, ${this.country}';
+
     return Container(
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -353,50 +237,48 @@ class _ItemLocationScreenState extends State<ItemLocationScreen> {
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            widget.item.name ?? 'Unknown Item',
+            name ?? 'Unknown Location',
             style: context.textTheme.bodyMedium?.copyWith(
               color: kColorNavyBlue,
               fontWeight: FontWeight.bold,
             ),
           ),
           SizedBox(height: 8),
-          if (widget.item.address != null)
+          if (address != null)
             Text(
-              widget.item.address!,
+              address,
               style: context.textTheme.bodyMedium?.copyWith(
                 color: kColorNavyBlue.withOpacity(0.8),
               ),
             ),
-          if (widget.item.latitude != null && widget.item.longitude != null) ...[
-            SizedBox(height: 4),
-            Text(
-              'Coordinates: ${widget.item.latitude!.toStringAsFixed(6)}, ${widget.item.longitude!.toStringAsFixed(6)}',
-              style: context.textTheme.bodySmall?.copyWith(
-                color: kColorNavyBlue.withOpacity(0.6),
-              ),
-            ),
-          ],
           SizedBox(height: 12),
-          UnelevatedRegularButton(
-            onPressed: () => _openInMaps(widget.item),
-            padding: EdgeInsets.all(10),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(3)),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.map, size: 18, color: kColorSecondaryBeige),
-                SizedBox(width: 8),
-                Flexible(
-                    child: Text(
-                  'Open Maps',
-                  style: context.textTheme.bodySmall?.copyWith(color: kColorSecondaryBeige),
-                )),
-              ],
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: UnelevatedRegularButton(
+                  onPressed: _openInMaps,
+                  padding: EdgeInsets.all(10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(3)),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.map, size: 18, color: kColorSecondaryBeige),
+                      SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          'Open Maps',
+                          style: context.textTheme.bodySmall?.copyWith(color: kColorSecondaryBeige),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
