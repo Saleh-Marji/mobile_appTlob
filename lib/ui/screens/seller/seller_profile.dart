@@ -365,10 +365,14 @@ class SellerProfileScreenState extends State<SellerProfileScreen> with SingleTic
                     },
                     child: Row(
                       children: [
-                        Icon(icon, color: Colors.grey.shade600),
+                        Icon(icon, color: kColorNavyBlue),
                         SizedBox(width: 10),
-                        Expanded(child: DescriptionText(text!, color: Colors.grey.shade600)),
-                        if (canLaunch) Icon(Icons.open_in_new, color: context.color.primary),
+                        Expanded(
+                            child: Text(
+                          text!,
+                          style: context.textTheme.bodyMedium?.copyWith(color: kColorNavyBlue),
+                        )),
+                        if (canLaunch) Icon(Icons.open_in_new, color: kColorNavyBlue),
                       ],
                     ),
                   );
@@ -1903,6 +1907,22 @@ class SellerProfileScreenState extends State<SellerProfileScreen> with SingleTic
       context.read<FetchSellerItemsCubit>().fetch(sellerId: widget.model.id!);
       context.read<FetchSellerRatingsCubit>().fetch(sellerId: widget.model.id!);
       context.read<UserHasRatedUserCubit>().userHasRatedUser(ratedUserId: widget.model.id!);
+    }
+  }
+
+  void _openUserLocationOnMaps(User user) {
+    if (user.latitude != null && user.longitude != null) {
+      Navigator.pushNamed(
+        context,
+        Routes.itemLocationScreen,
+        arguments: {
+          'latitude': user.latitude,
+          'longitude': user.longitude,
+          'name': user.name,
+          'city': user.city,
+          'country': user.country,
+        },
+      );
     }
   }
 }

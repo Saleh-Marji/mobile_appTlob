@@ -30,7 +30,7 @@ class AppSettings {
   static const String androidPackageName = 'com.tlobni.app';
   static const String shareAppText = "Share this App";
 
-  // static const String demoUrl = "http://192.168.0.105:8000";
+  // static const String demoUrl = "http://192.168.0.103:8000";
   static const String demoUrl = "https://dashboard.tlobni.com";
 
   ///API Setting
@@ -57,6 +57,9 @@ it will call API in background without showing the process and when data availab
   static const String shareNavigationWebUrl = "dashboard.tlobni.com";
 
   static const MapType googleMapType = MapType.normal; //none , normal , satellite , terrain , hybrid
+
+  ///Google Places API Key - Add your Google Places API key here
+  static const String googlePlacesApiKey = "AIzaSyBl_GKhyffHv3l_IezQCVpsZmpq51iMBT0";
 
   ///Firebase authentication OTP timer.
   static const int otpResendSecond = 60 * 2;

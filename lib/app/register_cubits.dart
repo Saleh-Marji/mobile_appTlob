@@ -44,6 +44,7 @@ import 'package:tlobni/data/cubits/location/fetch_areas_cubit.dart';
 import 'package:tlobni/data/cubits/location/fetch_cities_cubit.dart';
 import 'package:tlobni/data/cubits/location/fetch_countries_cubit.dart';
 import 'package:tlobni/data/cubits/location/fetch_states_cubit.dart';
+import 'package:tlobni/data/cubits/location/location_cubit.dart';
 import 'package:tlobni/data/cubits/my_item_review_report_cubit.dart';
 import 'package:tlobni/data/cubits/profile_setting_cubit.dart';
 import 'package:tlobni/data/cubits/renew_item_cubit.dart';
@@ -154,6 +155,7 @@ class RegisterCubits {
     BlocProvider(create: (context) => FetchMyRatingsCubit()),
     BlocProvider(create: (context) => AddMyItemReviewReportCubit()),
     BlocProvider(create: (context) => RenewItemCubit()),
-    BlocProvider(create: (context) => FetchAllCategoriesCubit())
+    BlocProvider(create: (context) => FetchAllCategoriesCubit()),
+    BlocProvider(create: (context) => LocationCubit())
   ];
 }

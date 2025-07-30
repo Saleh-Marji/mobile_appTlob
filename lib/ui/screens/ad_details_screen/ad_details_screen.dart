@@ -423,7 +423,6 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
           children: [
             Icon(Icons.star, color: context.color.secondary, size: 20),
             Expanded(child: SmallText('${state.averageRating.toStringAsFixed(1)} (${state.total} reviews)')),
-            //todo view all reviews
           ],
         );
       },

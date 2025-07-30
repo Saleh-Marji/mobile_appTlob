@@ -11,11 +11,11 @@ import 'package:tlobni/data/cubits/category/fetch_all_categories_cubit.dart';
 import 'package:tlobni/data/cubits/user/current_user_profile_cubit.dart';
 import 'package:tlobni/data/model/category_model.dart';
 import 'package:tlobni/data/model/item/item_model.dart';
-import 'package:tlobni/ui/screens/item/add_item_screen/widgets/location_autocomplete.dart';
 import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
 import 'package:tlobni/ui/screens/widgets/image_cropper.dart';
 import 'package:tlobni/ui/theme/theme.dart';
 import 'package:tlobni/ui/widgets/buttons/unelevated_regular_button.dart';
+import 'package:tlobni/ui/widgets/location_field_selector.dart';
 import 'package:tlobni/ui/widgets/text/description_text.dart';
 import 'package:tlobni/ui/widgets/text/heading_text.dart';
 import 'package:tlobni/utils/app_icon.dart';
@@ -125,6 +125,8 @@ class UserProfileScreenState extends State<UserProfileScreen> {
       country = user.country;
       city = user.city;
       state = user.state;
+      longitude = user.longitude;
+      latitude = user.latitude;
     }
     phoneController.text = user.mobile ?? '';
     isNotificationsEnabled = user.enableNotifications ?? false;
@@ -495,23 +497,20 @@ class UserProfileScreenState extends State<UserProfileScreen> {
 
   Widget _location() => _section(
         'Location',
-        LocationAutocomplete(
-          controller: locationController,
-          onSelected: (_) {},
-          fillColor: _textFieldFillColor,
-          radius: BorderRadius.circular(8),
-          borderColor: _sectionBorderColor,
-          hintText: 'Select your location',
-          onLocationSelected: (data) {
-            if (!mounted) return;
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              setState(() {
-                city = data['city'];
-                state = data['state'];
-                country = data['country'];
-              });
-            });
-          },
+        LocationFieldSelector(
+          required: true,
+          state: state,
+          country: country,
+          city: city,
+          longitude: longitude,
+          latitude: latitude,
+          onLocationSelected: (latitude, longitude, city, country, state) => setState(() {
+            this.country = country;
+            this.city = city;
+            this.state = state;
+            this.longitude = longitude;
+            this.latitude = latitude;
+          }),
         ),
       );
 
@@ -524,7 +523,7 @@ class UserProfileScreenState extends State<UserProfileScreen> {
   List<Widget> _basicInfoBody() => [
         _profilePicture(),
         _fullName(),
-        if(_type != UserType.business) _gender(),
+        if (_type != UserType.business) _gender(),
         if (_type != UserType.client) _phoneNumber(),
         _location(),
         _notificationSwitch(),
@@ -658,6 +657,8 @@ class UserProfileScreenState extends State<UserProfileScreen> {
           twitter: twitterController.text.trim(),
           instagram: instagramController.text.trim(),
           tiktok: tiktokController.text.trim(),
+          latitude: latitude,
+          longitude: longitude,
         );
   }
 

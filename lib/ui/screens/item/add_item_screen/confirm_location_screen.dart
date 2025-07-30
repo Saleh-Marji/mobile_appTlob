@@ -401,6 +401,55 @@ class _ConfirmLocationScreenState extends CloudState<ConfirmLocationScreen> with
                       border: BorderSide(color: context.color.textDefaultColor.withOpacity(0.3), width: 1.5),
                       radius: 5),
                 ),
+                SizedBox(height: 10),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 15),
+                  child: UiUtils.buildButton(
+                    context,
+                    height: 48,
+                    onPressed: () {
+                      Navigator.pushNamed(context, Routes.locationPickerScreen, arguments: {
+                        'title': 'Select Item Location',
+                        'showSearchBar': true,
+                        'allowManualInput': true,
+                      }).then((value) {
+                        if (value != null && value is Map<String, dynamic>) {
+                          double? lat = value['latitude'];
+                          double? lng = value['longitude'];
+                          String? address = value['address'];
+                          
+                          if (lat != null && lng != null) {
+                            setState(() {
+                              latitude = lat;
+                              longitude = lng;
+                              currentLocation = address ?? 'Selected Location';
+                              
+                              _cameraPosition = CameraPosition(
+                                target: LatLng(lat, lng),
+                                zoom: 14.4746,
+                                bearing: 0,
+                              );
+                              
+                              _markers.clear();
+                              _markers.add(Marker(
+                                markerId: const MarkerId('selectedLocation'),
+                                position: LatLng(lat, lng),
+                              ));
+                              
+                              getLocationFromLatitudeLongitude(latLng: LatLng(lat, lng));
+                            });
+                          }
+                        }
+                      });
+                    },
+                    fontSize: 14,
+                    buttonTitle: "Pick on Google Maps",
+                    textColor: Colors.white,
+                    buttonColor: Colors.blue,
+                    border: BorderSide(color: Colors.blue, width: 1.5),
+                    radius: 5,
+                  ),
+                ),
                 SizedBox(
                   height: 20,
                 ),

@@ -34,6 +34,8 @@ import 'package:tlobni/ui/screens/item/view_all_screen.dart';
 import 'package:tlobni/ui/screens/location/areas_screen.dart';
 import 'package:tlobni/ui/screens/location/cities_screen.dart';
 import 'package:tlobni/ui/screens/location/countries_screen.dart';
+import 'package:tlobni/ui/screens/location/item_location_screen.dart';
+import 'package:tlobni/ui/screens/location/location_picker_screen.dart';
 import 'package:tlobni/ui/screens/location/nearby_location.dart';
 import 'package:tlobni/ui/screens/location/states_screen.dart';
 import 'package:tlobni/ui/screens/location_permission_screen.dart';
@@ -146,6 +148,11 @@ class Routes {
 
   // Add the new route constant
   static const featuredUsersScreen = '/featuredUsersScreen';
+
+  // Google Maps related routes
+  static const locationPickerScreen = '/locationPickerScreen';
+  static const itemLocationScreen = '/itemLocationScreen';
+  static const userLocationScreen = '/userLocationScreen';
 
   static String currentRoute = '';
   static String previousRoute = '';
@@ -303,6 +310,12 @@ class Routes {
       // Add the new route case
       case featuredUsersScreen:
         return FeaturedUsersScreen.route(routeSettings);
+
+      // Google Maps related routes
+      case locationPickerScreen:
+        return LocationPickerScreen.route(routeSettings);
+      case itemLocationScreen:
+        return ItemLocationScreen.route(routeSettings);
 
       default:
         return CupertinoPageRoute(builder: (context) => const Scaffold());
