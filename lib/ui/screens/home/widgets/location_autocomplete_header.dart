@@ -39,7 +39,7 @@ class _LocationAutocompleteHeaderState extends State<LocationAutocompleteHeader>
     super.dispose();
   }
 
-  void _refreshData(Map<String, String> location) {
+  void _refreshData(Map<String, dynamic> location) {
     // Store location data using the proper HiveUtils method
     HiveUtils.setLocation(
       city: location['city'],
@@ -192,7 +192,7 @@ class _LocationAutocompleteHeaderState extends State<LocationAutocompleteHeader>
                     });
                   }
                 },
-                onLocationSelected: (Map<String, String> location) {
+                onLocationSelected: (location) {
                   if (location.isEmpty) return;
                   _refreshData(location);
                   // Only collapse if not in prevent mode

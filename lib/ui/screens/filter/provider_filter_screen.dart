@@ -122,55 +122,37 @@ class _ProviderFilterScreenState extends State<ProviderFilterScreen> {
       );
 
   Widget _buildLocationWidget() {
-    return Container(
-      height: 55,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: context.color.secondaryColor,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: context.color.borderColor.darken(30),
-          width: 1,
+    return Theme(
+      data: Theme.of(context).copyWith(
+        inputDecorationTheme: const InputDecorationTheme(
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+        ),
+        iconTheme: IconThemeData(
+          color: context.color.textDefaultColor,
+          size: 20,
         ),
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(9),
-        child: Theme(
-          data: Theme.of(context).copyWith(
-            inputDecorationTheme: const InputDecorationTheme(
-              border: InputBorder.none,
-              enabledBorder: InputBorder.none,
-              focusedBorder: InputBorder.none,
-            ),
-            iconTheme: IconThemeData(
-              color: context.color.textDefaultColor,
-              size: 20,
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 9),
-            child: LocationAutocomplete(
-              controller: locationController,
-              hintText: "allCities".translate(context),
-              onSelected: (String location) {
-                // Basic handling when only the string is returned
-              },
-              onLocationSelected: (Map<String, String> locationData) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  setState(() {
-                    city = locationData['city'] ?? "";
-                    _state = locationData['state'] ?? "";
-                    country = locationData['country'] ?? "";
-                    area = "";
-                    areaId = null;
-                    latitude = null;
-                    longitude = null;
-                  });
-                });
-              },
-            ),
-          ),
-        ),
+      child: LocationAutocomplete(
+        controller: locationController,
+        hintText: "allCities".translate(context),
+        onSelected: (String location) {
+          // Basic handling when only the string is returned
+        },
+        onLocationSelected: (locationData) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            setState(() {
+              city = locationData['city'] ?? "";
+              _state = locationData['state'] ?? "";
+              country = locationData['country'] ?? "";
+              area = "";
+              areaId = null;
+              latitude = null;
+              longitude = null;
+            });
+          });
+        },
       ),
     );
   }

@@ -27,11 +27,11 @@ class GooglePlaceRepository {
           String city = prediction['structured_formatting']['main_text'] ?? '';
           String description = prediction['description'] ?? '';
           String placeId = prediction['place_id'] ?? '';
-          
+
           // Extract state and country from description
           String state = '';
           String country = '';
-          
+
           if (description.contains(',')) {
             List<String> parts = description.split(',');
             if (parts.length >= 2) {
@@ -44,8 +44,8 @@ class GooglePlaceRepository {
             city: city,
             description: description,
             placeId: placeId,
-            latitude: '0', // Will be filled when getting place details
-            longitude: '0', // Will be filled when getting place details
+            latitude: 0, // Will be filled when getting place details
+            longitude: 0, // Will be filled when getting place details
             state: state,
             country: country,
           ));
@@ -156,13 +156,13 @@ class GooglePlaceRepository {
 
         for (var result in results) {
           var location = result['geometry']['location'];
-          
+
           places.add(GooglePlaceModel(
             city: result['name'] ?? '',
             description: result['vicinity'] ?? '',
             placeId: result['place_id'] ?? '',
-            latitude: location['lat'].toString(),
-            longitude: location['lng'].toString(),
+            latitude: location['lat'],
+            longitude: location['lng'],
             state: '', // Will be filled if needed
             country: '', // Will be filled if needed
           ));
@@ -176,4 +176,4 @@ class GooglePlaceRepository {
       throw Exception('Error searching nearby places: $e');
     }
   }
-} 
+}

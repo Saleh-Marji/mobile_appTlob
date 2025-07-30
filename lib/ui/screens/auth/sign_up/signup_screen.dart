@@ -11,11 +11,11 @@ import 'package:tlobni/data/cubits/auth/authentication_cubit.dart';
 import 'package:tlobni/data/cubits/system/app_theme_cubit.dart';
 import 'package:tlobni/data/model/category_model.dart';
 import 'package:tlobni/data/repositories/category_repository.dart';
-import 'package:tlobni/ui/screens/item/add_item_screen/widgets/location_autocomplete.dart';
 import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
 import 'package:tlobni/ui/screens/widgets/custom_text_form_field.dart';
 import 'package:tlobni/ui/theme/theme.dart';
 import 'package:tlobni/ui/widgets/buttons/skip_for_later.dart';
+import 'package:tlobni/ui/widgets/location_field_selector.dart';
 import 'package:tlobni/ui/widgets/text/description_text.dart';
 import 'package:tlobni/ui/widgets/text/heading_text.dart';
 import 'package:tlobni/utils/api.dart';
@@ -92,6 +92,8 @@ class _SignupScreenState extends CloudState<SignupScreen> {
   String? _city;
   String? _state;
 
+  double? _longitude, _latitude;
+
   // Categories
   // Replace hardcoded categories with fetched categories
   List<CategoryModel> _categories = [];
@@ -110,20 +112,20 @@ class _SignupScreenState extends CloudState<SignupScreen> {
   // Track expanded subcategories
   final Set<int> _expandedSubcategories = {};
 
-  Widget _locationWidget(bool required) => LocationAutocomplete(
-        controller: _locationController,
-        hintText: "Location${required ? ' *' : ''}".translate(context),
-        onSelected: (String location) {
-          // Basic handling when only the string is returned
-        },
-        fontSize: null,
-        padding: const EdgeInsets.all(16),
-        radius: BorderRadius.circular(8),
-        onLocationSelected: (Map<String, String> locationData) {
+  Widget _locationWidget(bool required) => LocationFieldSelector(
+        latitude: _latitude,
+        longitude: _longitude,
+        city: _city,
+        country: _country,
+        state: _state,
+        required: required,
+        onLocationSelected: (latitude, longitude, city, country, state) {
           setState(() {
-            _city = locationData['city'] ?? "";
-            _state = locationData['state'] ?? "";
-            _country = locationData['country'] ?? "";
+            _latitude = latitude;
+            _longitude = longitude;
+            _city = city;
+            _country = country;
+            _state = state;
           });
         },
       );
@@ -320,6 +322,8 @@ class _SignupScreenState extends CloudState<SignupScreen> {
           'country': _country,
           'state': _state,
           'city': _city,
+          'longitude': _longitude,
+          'latitude': _latitude,
           'country_code': _countryCode,
           'categories': categoriesString,
           'phone': _userType == "Provider"
@@ -371,6 +375,8 @@ class _SignupScreenState extends CloudState<SignupScreen> {
             'fcmId': userData?["fcm_id"] ?? "",
             'notification': userData?["notification"] ?? 1,
             'address': userData?["address"] ?? "",
+            'longitude': _longitude,
+            'latitude': _latitude,
             'categories': categoriesString,
             'phone': _userType == "Provider"
                 ? (_providerType == "Expert" ? _expertPhoneController.text.trim() : _businessPhoneController.text.trim())

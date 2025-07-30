@@ -29,7 +29,7 @@ import 'package:tlobni/ui/widgets/buttons/primary_button.dart';
 import 'package:tlobni/ui/widgets/buttons/regular_button.dart';
 import 'package:tlobni/ui/widgets/buttons/unelevated_regular_button.dart';
 import 'package:tlobni/ui/widgets/dropdown/form_dropdown.dart';
-import 'package:tlobni/ui/widgets/location_picker_widget.dart';
+import 'package:tlobni/ui/widgets/location_field_selector.dart';
 import 'package:tlobni/ui/widgets/text/description_text.dart';
 import 'package:tlobni/ui/widgets/text/heading_text.dart';
 import 'package:tlobni/ui/widgets/text/small_text.dart';
@@ -121,7 +121,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
   Set<String> _locationTypes = {};
   DateTime? _expirationDate = DateTime.now();
   TimeOfDay? _expirationTime = TimeOfDay.now();
-  AddressComponent? formatedAddress;
+  AddressComponent? formattedAddress;
   bool _isSubmitting = false; // Add loading state for submit button
   CategoryModel? _selectedCategory;
   bool forACause = false;
@@ -373,98 +373,22 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
 
   Widget _location() => _field(
         label: 'Location',
-        child: Column(
-          children: [
-            // Location display field (read-only)
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-              decoration: BoxDecoration(
-                border: Border.all(color: _greyBorderColor),
-                borderRadius: BorderRadius.circular(10),
-                color: Colors.grey[50],
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.location_on_outlined, color: Colors.grey[600], size: 18),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: CustomText(
-                      locationController.text.isEmpty ? 'No location selected' : locationController.text,
-                      color: locationController.text.isEmpty ? Colors.grey[500] : Colors.black87,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(height: 8),
-            // Coordinates display
-            if (_selectedLatitude != null && _selectedLongitude != null)
-              Container(
-                padding: EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
-                  borderRadius: BorderRadius.circular(8),
-                  color: Colors.blue.withValues(alpha: 0.05),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.gps_fixed, color: Colors.blue, size: 16),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          CustomText(
-                            'Latitude: ${_selectedLatitude!.toStringAsFixed(6)}',
-                            fontSize: 12,
-                            color: Colors.blue[700],
-                          ),
-                          CustomText(
-                            'Longitude: ${_selectedLongitude!.toStringAsFixed(6)}',
-                            fontSize: 12,
-                            color: Colors.blue[700],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () => _openLocationPicker(),
-                    icon: Icon(Icons.map, size: 18),
-                    label: CustomText('Pick on Map'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: context.color.secondaryColor,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(width: 8),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () => _getCurrentLocation(),
-                    icon: Icon(Icons.my_location, size: 18),
-                    label: CustomText('My Location'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
+        child: LocationFieldSelector(
+          required: true,
+          latitude: _selectedLatitude,
+          longitude: _selectedLongitude,
+          city: formattedAddress?.city,
+          country: formattedAddress?.country,
+          state: formattedAddress?.state,
+          onLocationSelected: (latitude, longitude, city, country, state) => setState(() {
+            _selectedLatitude = latitude;
+            _selectedLongitude = longitude;
+            formattedAddress = AddressComponent(
+              city: city,
+              country: country,
+              state: state,
+            );
+          }),
         ),
       );
 
@@ -743,10 +667,10 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
     // For experience type OR if location is valid for service type
     if (postType == PostType.experience ||
         hasLocationData ||
-        (formatedAddress != null &&
-            !((formatedAddress!.city == "" || formatedAddress!.city == null) &&
-                (formatedAddress!.area == "" || formatedAddress!.area == null)) &&
-            !(formatedAddress!.country == "" || formatedAddress!.country == null))) {
+        (formattedAddress != null &&
+            !((formattedAddress!.city == "" || formattedAddress!.city == null) &&
+                (formattedAddress!.area == "" || formattedAddress!.area == null)) &&
+            !(formattedAddress!.country == "" || formattedAddress!.country == null))) {
       try {
         // Create a fresh cloudData map to ensure we're collecting current values
         // This avoids using potentially stale data from getCloudData("with_more_details")
@@ -864,14 +788,14 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
         }
 
         // Add location data if available
-        if (formatedAddress != null) {
-          cloudData['address'] = formatedAddress?.mixed;
-          cloudData['country'] = formatedAddress!.country;
-          cloudData['city'] = (formatedAddress!.city == "" || formatedAddress!.city == null)
-              ? (formatedAddress!.area == "" || formatedAddress!.area == null ? null : formatedAddress!.area)
-              : formatedAddress!.city;
-          cloudData['state'] = formatedAddress!.state;
-          if (formatedAddress!.areaId != null) cloudData['area_id'] = formatedAddress!.areaId;
+        if (formattedAddress != null) {
+          cloudData['address'] = formattedAddress?.mixed;
+          cloudData['country'] = formattedAddress!.country;
+          cloudData['city'] = (formattedAddress!.city == "" || formattedAddress!.city == null)
+              ? (formattedAddress!.area == "" || formattedAddress!.area == null ? null : formattedAddress!.area)
+              : formattedAddress!.city;
+          cloudData['state'] = formattedAddress!.state;
+          if (formattedAddress!.areaId != null) cloudData['area_id'] = formattedAddress!.areaId;
         }
 
         // Add coordinates if available
@@ -976,20 +900,20 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
   void _updateLocationData(Map<String, String> locationData) {
     if (locationData.isEmpty) return;
     // Update the address component directly
-    formatedAddress = AddressComponent(
-      city: locationData['city'] ?? formatedAddress?.city,
-      state: locationData['state'] ?? formatedAddress?.state,
-      country: locationData['country'] ?? formatedAddress?.country,
-      area: locationData['city'] ?? formatedAddress?.area,
+    formattedAddress = AddressComponent(
+      city: locationData['city'] ?? formattedAddress?.city,
+      state: locationData['state'] ?? formattedAddress?.state,
+      country: locationData['country'] ?? formattedAddress?.country,
+      area: locationData['city'] ?? formattedAddress?.area,
       mixed: "${locationData['city'] ?? ''}, ${locationData['country'] ?? ''}",
-      areaId: formatedAddress?.areaId,
+      areaId: formattedAddress?.areaId,
     );
 
     // Always ensure the locationController has the consistent value
-    if (formatedAddress != null && formatedAddress!.mixed != null && formatedAddress!.mixed!.isNotEmpty) {
+    if (formattedAddress != null && formattedAddress!.mixed != null && formattedAddress!.mixed!.isNotEmpty) {
       // Only update if it's different to avoid unnecessary text controller changes
-      if (locationController.text != formatedAddress!.mixed) {
-        locationController.text = formatedAddress!.mixed!;
+      if (locationController.text != formattedAddress!.mixed) {
+        locationController.text = formattedAddress!.mixed!;
       }
     }
 
@@ -1004,53 +928,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
 
     // Add debug log
     print("Location updated to: ${locationController.text}");
-    print("FormatedAddress: $formatedAddress");
-  }
-
-  // Open location picker with Google Maps
-  void _openLocationPicker() async {
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => LocationPickerWidget(
-          title: 'Select Item Location',
-          initialLatitude: _selectedLatitude,
-          initialLongitude: _selectedLongitude,
-          initialAddress: locationController.text.isNotEmpty ? locationController.text : null,
-          onLocationSelected: (latitude, longitude, address) {
-            // Store coordinates
-            _selectedLatitude = latitude;
-            _selectedLongitude = longitude;
-
-            // Update location data
-            Map<String, String> locationData = {};
-            if (address.isNotEmpty) {
-              List<String> parts = address.split(',');
-              if (parts.length >= 1) locationData['city'] = parts[0].trim();
-              if (parts.length >= 2) locationData['state'] = parts[1].trim();
-              if (parts.length >= 3) locationData['country'] = parts[2].trim();
-            }
-
-            // Update the formatted address
-            formatedAddress = AddressComponent(
-              city: locationData['city'] ?? formatedAddress?.city,
-              state: locationData['state'] ?? formatedAddress?.state,
-              country: locationData['country'] ?? formatedAddress?.country,
-              area: locationData['city'] ?? formatedAddress?.area,
-              mixed: address.isNotEmpty ? address : "${locationData['city'] ?? ''}, ${locationData['country'] ?? ''}",
-              areaId: formatedAddress?.areaId,
-            );
-
-            // Update the location controller
-            if (address.isNotEmpty) {
-              locationController.text = address;
-            }
-
-            setState(() {});
-          },
-        ),
-      ),
-    );
+    print("FormatedAddress: $formattedAddress");
   }
 
   // Get current location
@@ -1262,19 +1140,19 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
         onAccept: () => Future.value().then((_) {
           if (_formKey.currentState!.validate()) {
             setState(() {
-              if (formatedAddress != null) {
+              if (formattedAddress != null) {
                 // Update existing formatedAddress
                 if (from == 1) {
-                  formatedAddress = AddressComponent.copyWithFields(formatedAddress!, newCity: controller.text);
+                  formattedAddress = AddressComponent.copyWithFields(formattedAddress!, newCity: controller.text);
                 } else if (from == 2) {
-                  formatedAddress = AddressComponent.copyWithFields(formatedAddress!, newState: controller.text);
+                  formattedAddress = AddressComponent.copyWithFields(formattedAddress!, newState: controller.text);
                 } else if (from == 3) {
-                  formatedAddress = AddressComponent.copyWithFields(formatedAddress!, newCountry: controller.text);
+                  formattedAddress = AddressComponent.copyWithFields(formattedAddress!, newCountry: controller.text);
                 }
               } else {
                 // Create a new AddressComponent if formatedAddress is null
                 if (from == 1) {
-                  formatedAddress = AddressComponent(
+                  formattedAddress = AddressComponent(
                     area: "",
                     areaId: null,
                     city: controller.text,
@@ -1282,7 +1160,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                     state: "",
                   );
                 } else if (from == 2) {
-                  formatedAddress = AddressComponent(
+                  formattedAddress = AddressComponent(
                     area: "",
                     areaId: null,
                     city: "",
@@ -1290,7 +1168,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
                     state: controller.text,
                   );
                 } else if (from == 3) {
-                  formatedAddress = AddressComponent(
+                  formattedAddress = AddressComponent(
                     area: "",
                     areaId: null,
                     city: "",
@@ -1711,8 +1589,8 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
     print("At My Location: $_atMyLocation");
     print("Virtual: $_isVirtual");
     print("Current location text: ${locationController.text}");
-    if (formatedAddress != null) {
-      print("Formatted address - City: ${formatedAddress!.city}, Country: ${formatedAddress!.country}");
+    if (formattedAddress != null) {
+      print("Formatted address - City: ${formattedAddress!.city}, Country: ${formattedAddress!.country}");
     }
 
     return Column(
@@ -1782,40 +1660,6 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
               ],
             ),
           ),
-        SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () => _openLocationPicker(),
-                icon: Icon(Icons.map, size: 16),
-                label: CustomText('Pick on Map', fontSize: 12),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: context.color.secondaryColor,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(width: 8),
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () => _getCurrentLocation(),
-                icon: Icon(Icons.my_location, size: 16),
-                label: CustomText('My Location', fontSize: 12),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
         SizedBox(height: 15),
 
         // Location type options with improved visibility
@@ -1875,127 +1719,6 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
               ),
             ],
           ),
-        ),
-        SizedBox(height: 15),
-      ],
-    );
-  }
-
-  // Experience Location
-  Widget _buildExperienceLocationSection(BuildContext context) {
-    // Only show for Experience type
-    dynamic rawPostType = getCloudData("post_type");
-    PostType? postType;
-
-    if (rawPostType is PostType) {
-      postType = rawPostType;
-    } else {
-      // Handle the case where post_type is not properly cast
-      return SizedBox.shrink();
-    }
-
-    if (postType != PostType.experience) return SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        CustomText(
-          "Experience Location".translate(context) + " *",
-          fontSize: context.font.large,
-          fontWeight: FontWeight.w500,
-        ),
-        SizedBox(height: 10),
-
-        // Location field (read-only display)
-        CustomText("Location".translate(context) + " *"),
-        SizedBox(height: 8),
-        Container(
-          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
-            borderRadius: BorderRadius.circular(10),
-            color: Colors.grey[50],
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.location_on_outlined, color: Colors.grey[600], size: 18),
-              SizedBox(width: 8),
-              Expanded(
-                child: CustomText(
-                  locationController.text.isEmpty ? 'No location selected' : locationController.text,
-                  color: locationController.text.isEmpty ? Colors.grey[500] : Colors.black87,
-                ),
-              ),
-            ],
-          ),
-        ),
-        SizedBox(height: 8),
-        // Coordinates display
-        if (_selectedLatitude != null && _selectedLongitude != null)
-          Container(
-            padding: EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
-              borderRadius: BorderRadius.circular(8),
-              color: Colors.blue.withValues(alpha: 0.05),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.gps_fixed, color: Colors.blue, size: 16),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CustomText(
-                        'Latitude: ${_selectedLatitude!.toStringAsFixed(6)}',
-                        fontSize: 12,
-                        color: Colors.blue[700],
-                      ),
-                      CustomText(
-                        'Longitude: ${_selectedLongitude!.toStringAsFixed(6)}',
-                        fontSize: 12,
-                        color: Colors.blue[700],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () => _openLocationPicker(),
-                icon: Icon(Icons.map, size: 16),
-                label: CustomText('Pick on Map', fontSize: 12),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: context.color.secondaryColor,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(width: 8),
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () => _getCurrentLocation(),
-                icon: Icon(Icons.my_location, size: 16),
-                label: CustomText('My Location', fontSize: 12),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                ),
-              ),
-            ),
-          ],
         ),
         SizedBox(height: 15),
       ],
@@ -2241,27 +1964,9 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
     }
 
     // Location check for both types
-    if (!isEdit &&
-        (formatedAddress == null ||
-            ((formatedAddress!.city == "" || formatedAddress!.city == null) &&
-                (formatedAddress!.area == "" || formatedAddress!.area == null)) ||
-            (formatedAddress!.country == "" || formatedAddress!.country == null))) {
+    if (formattedAddress == null) {
       // In edit mode, check if the item has location data
-      if (isEdit && item != null) {
-        bool hasLocationData = (item!.city != null && item!.city!.isNotEmpty) ||
-            (item!.area != null && item!.area!.isNotEmpty) ||
-            (item!.country != null && item!.country!.isNotEmpty);
-        if (!hasLocationData) {
-          missingFields.add("Location");
-        }
-      } else {
-        missingFields.add("Location");
-      }
-    }
-
-    // Coordinates check
-    if (_selectedLatitude == null || _selectedLongitude == null) {
-      missingFields.add("Location Coordinates");
+      missingFields.add('Location');
     }
 
     // For experience type, check expiration date and time

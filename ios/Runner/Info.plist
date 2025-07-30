@@ -52,7 +52,7 @@
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>49</string>
+	<string>50</string>
 	<key>FirebaseAppDelegateProxyEnabled</key>
 	<true/>
 	<key>GADApplicationIdentifier</key>
@@ -61,8 +61,6 @@
 	<false/>
 	<key>GIDClientID</key>
 	<string>6343732161-2d2p8ap7p3t8telagot152vrnotuptav.apps.googleusercontent.com</string>
-	<key>GoogleMapsAPIKey</key>
-	<string>YOUR_GOOGLE_MAPS_API_KEY_HERE</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>https</string>

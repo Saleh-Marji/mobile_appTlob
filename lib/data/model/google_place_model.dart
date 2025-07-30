@@ -5,8 +5,8 @@ class GooglePlaceModel {
   final String city;
   final String description;
   final String placeId;
-  final String latitude;
-  final String longitude;
+  final double latitude;
+  final double longitude;
   final String state;
   final String country;
 
@@ -21,13 +21,7 @@ class GooglePlaceModel {
   });
 
   GooglePlaceModel copyWith(
-      {String? name,
-      String? cityName,
-      String? placeId,
-      String? latitude,
-      String? longitude,
-      String? state,
-      String? country}) {
+      {String? name, String? cityName, String? placeId, double? latitude, double? longitude, String? state, String? country}) {
     return GooglePlaceModel(
       city: name ?? city,
       state: state ?? this.state,
@@ -58,15 +52,14 @@ class GooglePlaceModel {
       city: map['name'] as String,
       description: map['cityName'] as String,
       placeId: map['placeId'] as String,
-      latitude: map['latitude'] as String,
-      longitude: map['longitude'] as String,
+      latitude: map['latitude'] as double,
+      longitude: map['longitude'] as double,
     );
   }
 
   String toJson() => json.encode(toMap());
 
-  factory GooglePlaceModel.fromJson(String source) =>
-      GooglePlaceModel.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory GooglePlaceModel.fromJson(String source) => GooglePlaceModel.fromMap(json.decode(source) as Map<String, dynamic>);
 
   @override
   String toString() {
@@ -86,10 +79,6 @@ class GooglePlaceModel {
 
   @override
   int get hashCode {
-    return city.hashCode ^
-        description.hashCode ^
-        placeId.hashCode ^
-        latitude.hashCode ^
-        longitude.hashCode;
+    return city.hashCode ^ description.hashCode ^ placeId.hashCode ^ latitude.hashCode ^ longitude.hashCode;
   }
 }

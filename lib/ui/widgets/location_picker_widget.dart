@@ -11,22 +11,24 @@ import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/google_maps_service.dart';
 import 'package:tlobni/utils/ui_utils.dart';
 
+typedef LocationDataChanged = void Function(double latitude, double longitude, String? city, String? country, String? state);
+
 class LocationPickerWidget extends StatefulWidget {
   final String title;
   final double? initialLatitude;
   final double? initialLongitude;
-  final String? initialAddress;
-  final Function(double latitude, double longitude, String address) onLocationSelected;
-  final bool showSearchBar;
+  final String? initialCity, initialCountry, initialState;
+  final LocationDataChanged onLocationSelected;
 
   const LocationPickerWidget({
     Key? key,
     required this.title,
     this.initialLatitude,
     this.initialLongitude,
-    this.initialAddress,
     required this.onLocationSelected,
-    this.showSearchBar = true,
+    this.initialCity,
+    this.initialCountry,
+    this.initialState,
   }) : super(key: key);
 
   @override
@@ -40,11 +42,17 @@ class _LocationPickerWidgetState extends State<LocationPickerWidget> {
   final GooglePlaceRepository _placeRepository = GooglePlaceRepository();
   final TextEditingController _searchController = TextEditingController();
 
+  bool get showSearchBar => true;
+
   LatLng? _selectedLocation;
-  String _selectedAddress = '';
+  String? _city;
+  String? _country;
+  String? _state;
   bool _isLoading = false;
   List<GooglePlaceModel> _searchResults = [];
   bool _showSearchResults = false;
+
+  String get _formattedAddress => _city != null && _country != null ? '$_city, $_country' : _city ?? _country ?? '';
 
   @override
   void initState() {
@@ -55,7 +63,9 @@ class _LocationPickerWidgetState extends State<LocationPickerWidget> {
   void _initializeLocation() async {
     if (widget.initialLatitude != null && widget.initialLongitude != null) {
       _selectedLocation = LatLng(widget.initialLatitude!, widget.initialLongitude!);
-      _selectedAddress = widget.initialAddress ?? '';
+      _city = widget.initialCity;
+      _country = widget.initialCountry;
+      _state = widget.initialState;
       setState(() {});
     } else {
       await _getCurrentLocation();
@@ -75,22 +85,16 @@ class _LocationPickerWidgetState extends State<LocationPickerWidget> {
         Map<String, String>? addressData = await _mapsService.getAddressFromCoordinates(position.latitude, position.longitude);
 
         if (addressData != null) {
-          _selectedAddress = '${addressData['city']}, ${addressData['country']}';
+          formatFromAddressData(addressData);
         }
 
         setState(() {});
       } else {
-        // Use default location if current location is not available
-        _selectedLocation = LatLng(33.8869, 35.5131); // Beirut, Lebanon as default
-        _selectedAddress = 'Beirut, Lebanon';
-        setState(() {});
+        _useDefaultLocation();
       }
     } catch (e) {
       print('Error getting current location: $e');
-      // Use default location
-      _selectedLocation = LatLng(33.8869, 35.5131);
-      _selectedAddress = 'Beirut, Lebanon';
-      setState(() {});
+      _useDefaultLocation();
     } finally {
       setState(() => _isLoading = false);
     }
@@ -113,16 +117,21 @@ class _LocationPickerWidgetState extends State<LocationPickerWidget> {
       Map<String, String>? addressData = await _mapsService.getAddressFromCoordinates(location.latitude, location.longitude);
 
       if (addressData != null) {
-        _selectedAddress = addressData['formatted_address'] ?? '';
+        formatFromAddressData(addressData);
       } else {
-        _selectedAddress = '${location.latitude.toStringAsFixed(6)}, ${location.longitude.toStringAsFixed(6)}';
+        throw 'Cannot get address for location';
       }
     } catch (e) {
       print('Error getting address: $e');
-      _selectedAddress = '${location.latitude.toStringAsFixed(6)}, ${location.longitude.toStringAsFixed(6)}';
     } finally {
       setState(() => _isLoading = false);
     }
+  }
+
+  void formatFromAddressData(Map<String, String> addressData) {
+    _city = addressData['city'];
+    _country = addressData['country'];
+    _state = addressData['state'];
   }
 
   void _searchPlaces(String query) async {
@@ -154,23 +163,23 @@ class _LocationPickerWidgetState extends State<LocationPickerWidget> {
 
     try {
       // Get place details to get coordinates
-      Map<String, double>? coordinates = await _placeRepository.getPlaceDetailsFromPlaceId(place.placeId);
+      Map<String, double> coordinates = await _placeRepository.getPlaceDetailsFromPlaceId(place.placeId);
 
-      if (coordinates != null) {
-        LatLng location = LatLng(coordinates['lat']!, coordinates['lng']!);
+      LatLng location = LatLng(coordinates['lat']!, coordinates['lng']!);
 
-        setState(() {
-          _selectedLocation = location;
-          _selectedAddress = place.description;
-          _searchController.text = place.description;
-          _showSearchResults = false;
-        });
+      setState(() {
+        _selectedLocation = location;
+        _country = place.country;
+        _city = place.city;
+        _state = place.state;
+        _searchController.text = place.description;
+        _showSearchResults = false;
+      });
 
-        // Move camera to selected location
-        _mapController.animateCamera(
-          CameraUpdate.newLatLngZoom(location, 15.0),
-        );
-      }
+      // Move camera to selected location
+      _mapController.animateCamera(
+        CameraUpdate.newLatLngZoom(location, 15.0),
+      );
     } catch (e) {
       print('Error selecting place: $e');
     } finally {
@@ -180,11 +189,7 @@ class _LocationPickerWidgetState extends State<LocationPickerWidget> {
 
   void _confirmLocation() {
     if (_selectedLocation != null) {
-      widget.onLocationSelected(
-        _selectedLocation!.latitude,
-        _selectedLocation!.longitude,
-        _selectedAddress,
-      );
+      widget.onLocationSelected(_selectedLocation!.latitude, _selectedLocation!.longitude, _city, _country, _state);
       Navigator.of(context).pop();
     }
   }
@@ -236,7 +241,7 @@ class _LocationPickerWidgetState extends State<LocationPickerWidget> {
               : Center(child: UiUtils.progress()),
 
           // Search Bar
-          if (widget.showSearchBar)
+          if (showSearchBar)
             Positioned(
               top: 16,
               left: 16,
@@ -315,7 +320,7 @@ class _LocationPickerWidgetState extends State<LocationPickerWidget> {
             ),
 
           // Selected Address Display
-          if (_selectedAddress.isNotEmpty)
+          if (_city != null || _country != null)
             Positioned(
               bottom: 100,
               left: 16,
@@ -346,7 +351,7 @@ class _LocationPickerWidgetState extends State<LocationPickerWidget> {
                     ),
                     SizedBox(height: 4),
                     Text(
-                      _selectedAddress,
+                      _formattedAddress,
                       style: TextStyle(color: kColorNavyBlue),
                     ),
                   ],
@@ -373,5 +378,13 @@ class _LocationPickerWidgetState extends State<LocationPickerWidget> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _useDefaultLocation() {
+    // Use default location if current location is not available
+    _selectedLocation = LatLng(33.8869, 35.5131); // Beirut, Lebanon as default
+    _city = 'Beirut';
+    _country = 'Lebanon';
+    setState(() {});
   }
 }

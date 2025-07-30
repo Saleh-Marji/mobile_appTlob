@@ -1,11 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:tlobni/data/model/google_place_model.dart';
+import 'package:tlobni/data/repositories/google_place_repository.dart';
 import 'package:tlobni/ui/widgets/text/description_text.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
 
 class LocationAutocomplete extends StatefulWidget {
   final TextEditingController controller;
   final Function(String) onSelected;
-  final Function(Map<String, String>)? onLocationSelected;
+  final Function(Map<String, dynamic>)? onLocationSelected;
   final String hintText;
   final BorderRadius? radius;
   final EdgeInsets? padding;
@@ -34,64 +38,11 @@ class _LocationAutocompleteState extends State<LocationAutocomplete> {
   final FocusNode _focusNode = FocusNode();
   OverlayEntry? _overlayEntry;
   final LayerLink _layerLink = LayerLink();
+  final GooglePlaceRepository _googlePlaceRepository = GooglePlaceRepository();
 
-  // Updated list of cities with country and state information
-  final List<Map<String, String>> _locations = [
-    // Saudi Arabia
-    {'city': 'Riyadh', 'state': 'Riyadh Province', 'country': 'Saudi Arabia'},
-    {'city': 'Jeddah', 'state': 'Makkah Province', 'country': 'Saudi Arabia'},
-    {'city': 'Mecca', 'state': 'Makkah Province', 'country': 'Saudi Arabia'},
-    {'city': 'Medina', 'state': 'Medina Province', 'country': 'Saudi Arabia'},
-    {'city': 'Dammam', 'state': 'Eastern Province', 'country': 'Saudi Arabia'},
-
-    // UAE
-    {'city': 'Dubai', 'state': 'Dubai', 'country': 'UAE'},
-    {'city': 'Abu Dhabi', 'state': 'Abu Dhabi', 'country': 'UAE'},
-    {'city': 'Sharjah', 'state': 'Sharjah', 'country': 'UAE'},
-    {'city': 'Ajman', 'state': 'Ajman', 'country': 'UAE'},
-    {'city': 'Ras Al Khaimah', 'state': 'Ras Al Khaimah', 'country': 'UAE'},
-
-    // Qatar
-    {'city': 'Doha', 'state': '', 'country': 'Qatar'},
-    {'city': 'Al Wakrah', 'state': '', 'country': 'Qatar'},
-    {'city': 'Al Khor', 'state': '', 'country': 'Qatar'},
-
-    // Oman
-    {'city': 'Muscat', 'state': 'Muscat Governorate', 'country': 'Oman'},
-    {'city': 'Salalah', 'state': 'Dhofar Governorate', 'country': 'Oman'},
-    {'city': 'Sohar', 'state': 'North Al Batinah Governorate', 'country': 'Oman'},
-
-    // Kuwait
-    {'city': 'Kuwait City', 'state': 'Al Asimah', 'country': 'Kuwait'},
-    {'city': 'Hawalli', 'state': 'Hawalli Governorate', 'country': 'Kuwait'},
-
-    // Lebanon
-    {'city': 'Beirut', 'state': 'Beirut Governorate', 'country': 'Lebanon'},
-    {'city': 'Tripoli', 'state': 'North Governorate', 'country': 'Lebanon'},
-    {'city': 'Sidon', 'state': 'South Governorate', 'country': 'Lebanon'},
-    {'city': 'Tyre', 'state': 'South Governorate', 'country': 'Lebanon'},
-    {'city': 'Byblos', 'state': 'Mount Lebanon Governorate', 'country': 'Lebanon'},
-    {'city': 'Baalbek', 'state': 'Baalbek-Hermel Governorate', 'country': 'Lebanon'},
-
-    // Egypt
-    {'city': 'Cairo', 'state': 'Cairo Governorate', 'country': 'Egypt'},
-    {'city': 'Alexandria', 'state': 'Alexandria Governorate', 'country': 'Egypt'},
-    {'city': 'Giza', 'state': 'Giza Governorate', 'country': 'Egypt'},
-    {'city': 'Luxor', 'state': 'Luxor Governorate', 'country': 'Egypt'},
-
-    // Jordan
-    {'city': 'Amman', 'state': 'Amman Governorate', 'country': 'Jordan'},
-    {'city': 'Zarqa', 'state': 'Zarqa Governorate', 'country': 'Jordan'},
-    {'city': 'Irbid', 'state': 'Irbid Governorate', 'country': 'Jordan'},
-
-    // Iraq
-    {'city': 'Baghdad', 'state': 'Baghdad Governorate', 'country': 'Iraq'},
-    {'city': 'Basra', 'state': 'Basra Governorate', 'country': 'Iraq'},
-    {'city': 'Mosul', 'state': 'Nineveh Governorate', 'country': 'Iraq'},
-    {'city': 'Erbil', 'state': 'Erbil Governorate', 'country': 'Iraq'},
-  ];
-
-  List<Map<String, String>> _filteredLocations = [];
+  List<GooglePlaceModel> _filteredLocations = [];
+  bool _isLoading = false;
+  Timer? _debounceTimer;
 
   @override
   void initState() {
@@ -104,66 +55,63 @@ class _LocationAutocompleteState extends State<LocationAutocomplete> {
       }
     });
 
-    // If the controller already has text (from edit mode),
-    // try to find the location in our list and trigger onLocationSelected
-    if (widget.controller.text.isNotEmpty && widget.onLocationSelected != null) {
-      final String text = widget.controller.text.toLowerCase();
-
-      // First try to find a matching location from our predefined list
-      Map<String, String> matchedLocation = {};
-      try {
-        matchedLocation = _locations.firstWhere(
-          (location) {
-            final String cityCountry = "${location['city']}, ${location['country']}".toLowerCase();
-            final String countryCity = "${location['country']}, ${location['city']}".toLowerCase();
-            return cityCountry.contains(text) || countryCity.contains(text);
-          },
-          orElse: () => <String, String>{},
-        );
-      } catch (e) {
-        print("Error finding location match: $e");
-      }
-
-      // If we found a match, trigger the callbacks with the full data
-      if (matchedLocation.isNotEmpty) {
-        widget.onLocationSelected!(matchedLocation);
-      } else {
-        // If no match in predefined locations, try to extract city/country from the text
-        // Assuming format is "City, Country" or similar
-        final parts = widget.controller.text.split(',');
-        if (parts.length >= 2) {
-          final city = parts[0].trim();
-          final country = parts[1].trim();
-
-          // Create a custom location object for the location that's not in our list
-          final customLocation = {
-            'city': city,
-            'country': country,
-            'state': '',
-          };
-
-          // Call the callback with our extracted data
-          widget.onLocationSelected!(customLocation);
-        }
-      }
-    }
-
     widget.controller.addListener(_onTextChanged);
   }
 
   void _onTextChanged() {
-    widget.onLocationSelected?.call({});
-    final text = widget.controller.text.toLowerCase();
+    final text = widget.controller.text.trim();
+
+    // Cancel previous timer
+    _debounceTimer?.cancel();
+
     if (text.isEmpty) {
-      _filteredLocations = _locations.toList();
-    } else {
-      _filteredLocations = _locations.where((location) {
-        return '${location['city']}, ${location['country']}'.toLowerCase().contains(text.toLowerCase());
-      }).toList();
+      setState(() {
+        _filteredLocations = [];
+        _isLoading = false;
+      });
+      if (_overlayEntry != null) {
+        _updateOverlay();
+      }
+      return;
+    }
+
+    if (text.length < 2) {
+      setState(() {
+        _filteredLocations = [];
+        _isLoading = false;
+      });
+      if (_overlayEntry != null) {
+        _updateOverlay();
+      }
+      return;
+    }
+
+    // Set up debounce timer
+    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+      _searchLocations(text);
+    });
+  }
+
+  Future<void> _searchLocations(String text) async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final locations = await _googlePlaceRepository.searchCities(text);
+      setState(() {
+        _filteredLocations = locations;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _filteredLocations = [];
+        _isLoading = false;
+      });
+      print('Error searching locations: $e');
     }
 
     if (_overlayEntry != null) {
-      setState(() {});
       _updateOverlay();
     }
   }
@@ -204,39 +152,66 @@ class _LocationAutocompleteState extends State<LocationAutocomplete> {
               constraints: BoxConstraints(
                 maxHeight: 200,
               ),
-              child: _filteredLocations.isEmpty
+              child: _isLoading
                   ? Container(
                       padding: EdgeInsets.all(16),
-                      child: DescriptionText(
-                        "No locations found",
-                        color: theme.hintColor,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: theme.primaryColor,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          DescriptionText(
+                            "Searching...",
+                            color: theme.hintColor,
+                          ),
+                        ],
                       ),
                     )
-                  : ListView.builder(
-                      padding: EdgeInsets.zero,
-                      shrinkWrap: true,
-                      itemCount: _filteredLocations.length,
-                      itemBuilder: (context, index) {
-                        final location = _filteredLocations[index];
-                        final displayText = "${location['city']}, ${location['country']}";
+                  : _filteredLocations.isEmpty
+                      ? Container(
+                          padding: EdgeInsets.all(16),
+                          child: DescriptionText(
+                            "No locations found",
+                            color: theme.hintColor,
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: EdgeInsets.zero,
+                          shrinkWrap: true,
+                          itemCount: _filteredLocations.length,
+                          itemBuilder: (context, index) {
+                            final location = _filteredLocations[index];
+                            final displayText = location.description;
 
-                        return ListTile(
-                          title: DescriptionText(displayText),
-                          onTap: () {
-                            widget.controller.text = displayText;
-                            widget.onSelected(displayText);
+                            return ListTile(
+                              title: DescriptionText(displayText),
+                              onTap: () {
+                                widget.controller.text = displayText;
+                                widget.onSelected(displayText);
 
-                            // Pass the full location data
-                            if (widget.onLocationSelected != null) {
-                              widget.onLocationSelected!(location);
-                            }
+                                if (widget.onLocationSelected != null) {
+                                  widget.onLocationSelected!({
+                                    'city': location.city,
+                                    'country': location.country,
+                                    'longitude': location.longitude,
+                                    'latitude': location.latitude,
+                                    'state': location.state,
+                                  });
+                                }
 
-                            _hideOverlay();
-                            FocusScope.of(context).unfocus();
+                                _hideOverlay();
+                                FocusScope.of(context).unfocus();
+                              },
+                            );
                           },
-                        );
-                      },
-                    ),
+                        ),
             ),
           ),
         ),
@@ -246,6 +221,7 @@ class _LocationAutocompleteState extends State<LocationAutocomplete> {
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _focusNode.removeListener(() {});
     _focusNode.dispose();
     widget.controller.removeListener(_onTextChanged);
@@ -258,7 +234,7 @@ class _LocationAutocompleteState extends State<LocationAutocomplete> {
     final theme = Theme.of(context);
 
     final border = OutlineInputBorder(
-      borderRadius: widget.radius ?? BorderRadius.zero,
+      borderRadius: widget.radius ?? BorderRadius.circular(5),
       borderSide: BorderSide(color: widget.borderColor ?? Colors.grey.withValues(alpha: 0.35)),
     );
 
