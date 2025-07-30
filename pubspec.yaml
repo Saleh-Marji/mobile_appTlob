@@ -38,7 +38,7 @@ dependencies:
   awesome_notifications: ^0.10.0
   device_preview: ^1.2.0
   path_provider: ^2.1.4
-  record: ^5.1.2
+  record: ^6.0.0
   audioplayers: ^6.1.0
   image_cropper: ^8.0.2
   permission_handler: ^11.3.1
