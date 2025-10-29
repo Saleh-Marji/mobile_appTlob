@@ -398,7 +398,7 @@
 				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = 33Q8URLSK7;
 				ENABLE_BITCODE = NO;
-				FLUTTER_BUILD_NAME = 2.1.3;
+				FLUTTER_BUILD_NAME = 2.1.6;
 				FLUTTER_BUILD_NUMBER = 1;
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
@@ -493,7 +493,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.1.31;
+				MARKETING_VERSION = 2.1.61;
 				PRODUCT_BUNDLE_IDENTIFIER = com.tlobni.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -637,7 +637,7 @@
 				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = 33Q8URLSK7;
 				ENABLE_BITCODE = NO;
-				FLUTTER_BUILD_NAME = 2.1.3;
+				FLUTTER_BUILD_NAME = 2.1.6;
 				FLUTTER_BUILD_NUMBER = 1;
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
@@ -732,7 +732,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.1.31;
+				MARKETING_VERSION = 2.1.61;
 				PRODUCT_BUNDLE_IDENTIFIER = com.tlobni.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -764,7 +764,7 @@
 				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = 33Q8URLSK7;
 				ENABLE_BITCODE = NO;
-				FLUTTER_BUILD_NAME = 2.1.3;
+				FLUTTER_BUILD_NAME = 2.1.6;
 				FLUTTER_BUILD_NUMBER = 1;
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
@@ -859,7 +859,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.1.31;
+				MARKETING_VERSION = 2.1.61;
 				PRODUCT_BUNDLE_IDENTIFIER = com.tlobni.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
