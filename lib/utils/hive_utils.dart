@@ -310,7 +310,7 @@ class HiveUtils {
   }
 
   static bool isProvider() {
-    return getUserType() == "Provider";
+    return getUserType() == 'Business' || getUserType() == 'Expert';
   }
 
   static void clear() async {
@@ -335,4 +335,6 @@ class HiveUtils {
   static int? getUserIdInt() {
     return int.tryParse(Hive.box(HiveKeys.userDetailsBox).get("id").toString());
   }
+
+  static bool isBusiness() => getUserType() == 'Business';
 }

@@ -49,6 +49,7 @@ class AppIcons {
   static String defaultPersonLogo = _svgPath("defaultProfileIcon");
   static String arrowLeft = _svgPath("arrow_left");
   static String warning = _svgPath("warning");
+  static String whatsapp = _svgPath('whatsapp');
 
   // Image placeholder
   static String imagePlaceholder = _svgPath("Logo/placeholder");
@@ -58,8 +59,7 @@ class AppIcons {
   static String homeLogo = _svgPath("Logo/homelogo");
   static String placeHolder = _svgPath("Logo/placeholder");
   static String noInternet = _svgPath("no_internet_illustrator");
-  static String somethingWentWrong =
-      _svgPath("Illustrators/something_went_wrong");
+  static String somethingWentWrong = _svgPath("Illustrators/something_went_wrong");
   static String itemMap = _svgPath("itemmap");
   static String paystack = _svgPath("paystack");
   static String razorpay = _svgPath("razorpay");
@@ -68,8 +68,7 @@ class AppIcons {
   static String itemSubmittedc = _svgPath("itemsubmited");
   static String plusIcon = _svgPath("plus_button");
   static String no_chat_found = _svgPath("Illustrators/no_chat_found");
-  static String no_data_found =
-      _svgPath("Illustrators/no_data_found_illustrator");
+  static String no_data_found = _svgPath("Illustrators/no_data_found_illustrator");
   static String eye = _svgPath("eye");
   static String heart = _svgPath("heart");
   static String more = _svgPath("more");
@@ -111,8 +110,7 @@ class AppIcons {
   static String msgSendIcon = _svgPath("msg_send_icon");
   static String myReviewIcon = _svgPath("my_review");
   static String reportReviewIcon = _svgPath("report_review");
-  static String userVerificationIcon =
-      _svgPath("Illustrators/user_verification");
+  static String userVerificationIcon = _svgPath("Illustrators/user_verification");
 
   ///Bottom nav icons
   static String homeNav = _svgPath("Logo/homelogo");
@@ -125,6 +123,8 @@ class AppIcons {
   static String favoriteNavActive = _svgPath("like_fill");
   static String profileNav = _svgPath("bottomnav/profile");
   static String profileNavActive = _svgPath("bottomnav/profile_active");
+  static String myClaimsNav = _svgPath('bottomnav/my_claims_active');
+  static String myReceiptsNav = _svgPath("bottomnav/my_receipts");
 
   ///
   static String _svgPath(String name) {
@@ -132,6 +132,8 @@ class AppIcons {
   }
 
   static const String viewProfileIcon = "assets/icons/view_profile.svg";
+
+  static String dashboard = _svgPath("dashboard");
 }
 
 class MainIcons {

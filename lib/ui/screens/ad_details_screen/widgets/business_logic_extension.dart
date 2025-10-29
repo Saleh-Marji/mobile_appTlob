@@ -44,6 +44,7 @@ extension on AdDetailsScreenState {
 
       context.read<FetchItemReviewsCubit>().fetchItemReviews(itemId: model.id!);
       context.read<UserHasRatedItemCubit>().userHasRatedItem(itemId: model.id!);
+      context.read<ClaimItemCubit>().loadClaimed(model.id!);
     } catch (e) {
       // Log the error but don't navigate away
       log('Error refreshing: $e');
@@ -52,6 +53,14 @@ extension on AdDetailsScreenState {
 
   void _onWhatsappPressed() {
     HelperUtils.launchWhatsapp(model.user?.mobile);
+  }
+
+  void _onClaimPressed() {
+    Navigator.pushNamed(context, Routes.claimItemPaymentDetails, arguments: {
+      "itemModel": model,
+    }).then((value) {
+      _onRefresh();
+    });
   }
 
   void _onChatPressed() {

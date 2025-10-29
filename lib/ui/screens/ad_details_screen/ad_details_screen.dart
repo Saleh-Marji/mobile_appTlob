@@ -16,6 +16,7 @@ import 'package:tlobni/data/cubits/chat/get_buyer_chat_users_cubit.dart';
 import 'package:tlobni/data/cubits/chat/load_chat_messages.dart';
 import 'package:tlobni/data/cubits/chat/make_an_offer_item_cubit.dart';
 import 'package:tlobni/data/cubits/chat/send_message.dart';
+import 'package:tlobni/data/cubits/claim_item_cubit.dart';
 import 'package:tlobni/data/cubits/favorite/favorite_cubit.dart';
 import 'package:tlobni/data/cubits/favorite/manage_fav_cubit.dart';
 import 'package:tlobni/data/cubits/item/create_featured_ad_cubit.dart';
@@ -52,6 +53,7 @@ import 'package:tlobni/ui/screens/item/add_item_screen/models/post_type.dart';
 import 'package:tlobni/ui/screens/subscription/widget/featured_ads_subscription_plan_item.dart';
 import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
 import 'package:tlobni/ui/screens/widgets/blurred_dialoge_box.dart';
+import 'package:tlobni/ui/screens/widgets/countdown_timer.dart';
 import 'package:tlobni/ui/screens/widgets/errors/no_data_found.dart';
 import 'package:tlobni/ui/screens/widgets/errors/no_internet.dart';
 import 'package:tlobni/ui/screens/widgets/errors/something_went_wrong.dart';
@@ -76,6 +78,7 @@ import 'package:tlobni/utils/constant.dart';
 import 'package:tlobni/utils/custom_text.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/extensions/lib/currency_formatter.dart';
+import 'package:tlobni/utils/extensions/lib/duration.dart';
 import 'package:tlobni/utils/extensions/lib/widget_iterable.dart';
 import 'package:tlobni/utils/helper_utils.dart';
 import 'package:tlobni/utils/hive_utils.dart';
@@ -200,7 +203,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
 
   PreferredSize _appBar() => UiUtils.buildAppBar(
         context,
-        title: '${widget.model?.type == 'experience' ? 'Experience' : 'Service'} Details',
+        title: '${widget.model?.type == 'experience' ? 'Opportunity' : 'Service'} Details',
         showBackButton: true,
       );
 
@@ -523,6 +526,12 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
         spacing: 20,
         children: [
           if (model.description != null) _itemDetailsSection(title: 'Description', child: SmallText(model.description ?? '')),
+          if (model.itemDate != null && model.itemTime != null) ...[
+            _itemDetailsSection(
+              title: 'Date & Time',
+              child: SmallText('${DateFormat('MM/dd/yyyy').format(model.itemDate!)} at ${model.itemTime}'),
+            )
+          ],
           if (model.videoLink != null)
             _itemDetailsSection(
               title: 'Video Preview',
@@ -545,6 +554,9 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
           if (model.isForACause) _forACause(),
           _divider(),
           _aboutTheProvider(),
+          if (!isAddedByMe && !(model.isAlreadyReported ?? false)) ...[
+            reportItem(),
+          ],
         ],
       );
 
@@ -630,8 +642,9 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
         );
 
   Widget _limitedTimeExperience() {
-    final isExpired = model.expirationDate?.difference(DateTime.now()).isNegative;
-    if (isExpired == null) return SizedBox();
+    final endDate = model.finalExpirationDate;
+    final isExpired = endDate?.difference(DateTime.now()).isNegative;
+    if (endDate == null || isExpired == null) return SizedBox();
     return _elevatedContainer(
       child: Padding(
         padding: EdgeInsets.all(16.0),
@@ -641,35 +654,44 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
               children: [
                 Icon(Icons.event, color: isExpired ? Colors.red : context.color.secondary),
                 SizedBox(width: 10),
-                Expanded(child: HeadingText(isExpired ? 'This experience has expired' : 'Limited Time Experience', fontSize: 18)),
+                Expanded(child: HeadingText(isExpired ? 'This opportunity has expired' : 'Limited Time Opportunity', fontSize: 18)),
               ],
             ),
-            SizedBox(height: 10),
-            _divider(),
-            SizedBox(height: 10),
-            Column(
-              spacing: 12,
-              children: [
-                _limitedExperienceItem(
-                  Icons.event_busy,
-                  'End Date',
-                  _formatExperienceDateTime(model.expirationDate),
-                ),
-                if (!isExpired)
+            if (!isExpired) ...[
+              SizedBox(height: 10),
+              _divider(),
+              SizedBox(height: 10),
+              Column(
+                spacing: 12,
+                children: [
+                  _limitedExperienceItem(
+                    Icons.person,
+                    'Slots Available',
+                    DescriptionText('${model.slotsAvailable} slots', fontSize: 16),
+                  ),
                   _limitedExperienceItem(
                     Icons.hourglass_bottom,
                     'Countdown',
-                    '${model.expirationDate?.difference(DateTime.now()).abs().inDays} days left',
+                    CountdownTimer(
+                      endDateTime: endDate,
+                      refreshRateDuration: Duration(seconds: 1),
+                      builder: (remaining) => DescriptionText(
+                        remaining.toCountdownString(),
+                        fontSize: 16,
+                        color: Colors.red,
+                      ),
+                    ),
                   )
-              ],
-            )
+                ],
+              )
+            ],
           ],
         ),
       ),
     );
   }
 
-  Widget _limitedExperienceItem(IconData icon, String title, String content) => Row(
+  Widget _limitedExperienceItem(IconData icon, String title, Widget content) => Row(
         children: [
           Container(
             padding: EdgeInsets.all(10),
@@ -686,7 +708,7 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
               children: [
                 SmallText(title, color: Colors.grey, fontSize: 14),
                 SizedBox(height: 5),
-                DescriptionText(content, fontSize: 16),
+                content,
               ],
             ),
           )
@@ -836,35 +858,74 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
         ],
       );
 
-  Widget _bottomButtons() => Column(
-        children: [
-          _divider(),
-          Padding(
-            padding: const EdgeInsets.all(10.0),
-            child: Row(
-              children: (isAddedByMe
-                      ? [
-                          ('Edit', _onEditPressed),
-                          ('Delete', _onDeletePressed),
-                        ]
-                      : [
-                          if (model.user?.showPersonalDetails == 1 && model.user?.mobile != null) ('WhatsApp', _onWhatsappPressed),
-                          ('Chat', _onChatPressed),
-                        ])
-                  .map((e) {
-                    final (text, onPressed) = e;
-                    return PrimaryButton.text(
-                      text,
-                      onPressed: onPressed,
-                      fontSize: 16,
-                      padding: EdgeInsets.all(20),
-                    );
-                  })
-                  .mapExpandedSpaceBetween(10)
-                  .toList(),
-            ),
-          ),
-        ],
+  Widget _bottomButtons() => BlocBuilder<ClaimItemCubit, ClaimItemState>(
+        builder: (context, state) {
+          if (state is! ClaimItemSuccess) return SizedBox();
+          bool claimed = state.claimedItem;
+          bool hasSlotsLeft = model.slotsAvailable > 0;
+          bool expired = model.finalExpirationDate?.isBefore(DateTime.now()) ?? false;
+          bool canClaim = !claimed && hasSlotsLeft && !expired;
+          return Column(
+            children: [
+              _divider(),
+              Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: (isAddedByMe
+                            ? [
+                                (1, 'Edit', _onEditPressed),
+                                (1, 'Delete', _onDeletePressed),
+                              ]
+                            : [
+                                (
+                                  1,
+                                  claimed
+                                      ? 'Already Claimed'
+                                      : !hasSlotsLeft
+                                          ? 'No Slots Left'
+                                          : expired
+                                              ? 'Expired'
+                                              : 'Claim',
+                                  canClaim ? _onClaimPressed : null
+                                ),
+                                if (model.user?.showPersonalDetails == 1 && model.user?.mobile != null)
+                                  (0, UiUtils.getSvg(AppIcons.whatsapp, color: kColorSecondaryBeige), _onWhatsappPressed),
+                                (0, UiUtils.getSvg(AppIcons.chatNav, color: kColorSecondaryBeige, width: 30, height: 30), _onChatPressed),
+                              ])
+                        .map((e) {
+                          final (flex, content, onPressed) = e;
+                          if (content is String) {
+                            return (
+                              flex,
+                              PrimaryButton.text(
+                                content,
+                                onPressed: onPressed,
+                                fontSize: 16,
+                                padding: EdgeInsets.all(20),
+                              )
+                            );
+                          } else if (content is Widget) {
+                            return (
+                              flex,
+                              PrimaryButton(
+                                onPressed: onPressed,
+                                padding: EdgeInsets.all(20),
+                                child: content,
+                              )
+                            );
+                          }
+                          return (flex, SizedBox());
+                        })
+                        .mapExpandedSpaceBetween(10)
+                        .toList(),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       );
 
   Widget reportItem() {
@@ -875,7 +936,6 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
 
         // Background color
       ),
-      margin: const EdgeInsets.symmetric(vertical: 10),
       padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -968,10 +1028,6 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
                                     _address(),
                                     SizedBox(height: 10),
                                     if (model.locationType?.isNotEmpty ?? false) _locationType(),
-                                    if (!isAddedByMe && !(model.isAlreadyReported ?? false)) ...[
-                                      const SizedBox(height: 20),
-                                      reportItem(),
-                                    ],
                                     if (model.expirationDate != null) ...[
                                       const SizedBox(height: 20),
                                       _divider(),
@@ -3710,9 +3766,9 @@ class AdDetailsScreenState extends CloudState<AdDetailsScreen> {
               await UiUtils.showBlurredDialoge(
                 context,
                 dialoge: BlurredDialogBox(
-                  title: 'Delete Listing',
+                  title: 'Delete Drop',
                   content: DescriptionText(
-                    'Are you sure you want to delete this item?',
+                    'Are you sure you want to delete this drop?',
                   ),
                   isAcceptContainerPush: true,
                   onAccept: () async {

@@ -150,6 +150,13 @@ class _AccountTypeScreenState extends State<AccountTypeScreen> {
   Widget _buildAccountTypeOption(String accountType) {
     bool isSelected = _selectedAccountType == accountType;
 
+    String text = switch (accountType) {
+      'Client' => 'Opportunity Seeker',
+      'Expert' => 'Opportunity Maker',
+      'Business' => 'Organization',
+      _ => accountType,
+    };
+
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -168,7 +175,7 @@ class _AccountTypeScreenState extends State<AccountTypeScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.only(left: 20),
-              child: DescriptionText(accountType, weight: FontWeight.w500),
+              child: DescriptionText(text, weight: FontWeight.w500),
             ),
             Padding(
               padding: const EdgeInsets.only(right: 20),

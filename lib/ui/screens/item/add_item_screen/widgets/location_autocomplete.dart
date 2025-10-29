@@ -188,7 +188,7 @@ class _LocationAutocompleteState extends State<LocationAutocomplete> {
                           itemCount: _filteredLocations.length,
                           itemBuilder: (context, index) {
                             final location = _filteredLocations[index];
-                            final displayText = location.description;
+                            final displayText = location.city + ', ' + location.country;
 
                             return ListTile(
                               title: DescriptionText(displayText),
@@ -243,6 +243,23 @@ class _LocationAutocompleteState extends State<LocationAutocomplete> {
       child: TextField(
         controller: widget.controller,
         focusNode: _focusNode,
+        onSubmitted: (value) {
+          _hideOverlay();
+          FocusScope.of(context).unfocus();
+          for (var location in _filteredLocations) {
+            if (value.toLowerCase() == location.description.toLowerCase()) {
+              widget.controller.text = location.description;
+              widget.onSelected(location.description);
+              widget.onLocationSelected?.call({
+                'city': location.city,
+                'country': location.country,
+                'longitude': location.longitude,
+                'latitude': location.latitude,
+                'state': location.state,
+              });
+            }
+          }
+        },
         style: context.textTheme.bodyMedium,
         decoration: InputDecoration(
           hintText: widget.hintText,

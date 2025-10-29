@@ -71,6 +71,7 @@ class _ChatListScreenState extends State<ChatListScreen> with AutomaticKeepAlive
       child: Scaffold(
         backgroundColor: context.color.backgroundColor,
         appBar: UiUtils.buildAppBar(
+          showBackButton: true,
           context,
           title: "message".translate(context),
           actions: [

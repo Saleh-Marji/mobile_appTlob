@@ -65,11 +65,6 @@ class CustomTextFormField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        color: fillColor ?? context.color.secondaryColor,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: borderColor ?? Colors.grey.withValues(alpha: 0.35)),
-      ),
       child: TextFormField(
         controller: controller,
         inputFormatters: formaters,
@@ -149,11 +144,24 @@ class CustomTextFormField extends StatelessWidget {
           hintText: hintText,
           hintStyle: hintTextStyle ?? context.textTheme.bodyMedium?.copyWith(color: Colors.grey),
           filled: true,
-          fillColor: Colors.transparent,
+          fillColor: fillColor ?? context.color.secondaryColor,
           contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-          focusedBorder: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          border: InputBorder.none,
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: Colors.red.withValues()),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: borderColor ?? Colors.grey.withValues(alpha: 0.35), width: 1.5),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: borderColor ?? Colors.grey.withValues(alpha: 0.35)),
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: borderColor ?? Colors.grey.withValues(alpha: 0.35)),
+          ),
         ),
         onTap: onTap,
       ),

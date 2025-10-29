@@ -518,7 +518,7 @@ class _SignupScreenState extends CloudState<SignupScreen> {
                         const SizedBox(height: 30),
                         // Heading with account type
                         HeadingText(
-                          "Create ${widget.userType == 'Client' ? 'Client' : _providerType} Account",
+                          "Create ${widget.userType == 'Client' ? 'Opportunity Seeker' : _providerType == 'Business' ? 'Organization' : 'Opportunity Maker'} Account",
                           fontSize: context.font.extraLarge,
                         ),
                         const SizedBox(height: 24),

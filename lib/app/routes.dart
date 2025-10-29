@@ -11,12 +11,14 @@ import 'package:tlobni/ui/screens/auth/sign_up/signup_screen.dart';
 import 'package:tlobni/ui/screens/blogs/blog_details.dart';
 import 'package:tlobni/ui/screens/blogs/blogs_screen.dart';
 import 'package:tlobni/ui/screens/chat/blocked_user_list_screen.dart';
+import 'package:tlobni/ui/screens/dashboard_screen.dart';
 import 'package:tlobni/ui/screens/faqs_screen.dart';
 import 'package:tlobni/ui/screens/favorite_screen.dart';
 import 'package:tlobni/ui/screens/filter_category_screen.dart';
 import 'package:tlobni/ui/screens/home/category_list.dart';
 import 'package:tlobni/ui/screens/home/change_language_screen.dart';
 import 'package:tlobni/ui/screens/home/featured_users_screen.dart';
+import 'package:tlobni/ui/screens/home/private_spaces_items_screen.dart';
 import 'package:tlobni/ui/screens/home/search_screen.dart';
 import 'package:tlobni/ui/screens/home/widgets/categoryFilterScreen.dart';
 import 'package:tlobni/ui/screens/home/widgets/posted_since_filter.dart';
@@ -55,8 +57,10 @@ import 'package:tlobni/ui/screens/sub_category/sub_category_screen.dart';
 import 'package:tlobni/ui/screens/subscription/packages_list.dart';
 import 'package:tlobni/ui/screens/subscription/transaction_history_screen.dart';
 import 'package:tlobni/ui/screens/user_profile/edit_profile.dart';
+import 'package:tlobni/ui/screens/view_claimed_users_of_item_screen.dart';
 import 'package:tlobni/ui/screens/welcome/welcome_screen.dart';
 import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
+import 'package:tlobni/ui/screens/widgets/claim_item_payment_details_screen.dart';
 import 'package:tlobni/ui/screens/widgets/maintenance_mode.dart';
 import 'package:tlobni/utils/constant.dart';
 
@@ -68,6 +72,7 @@ class Routes {
   static const login = 'login';
   static const forgotPassword = 'forgotPassword';
   static const signup = 'signup';
+  static const privateSpacesItems = 'privateSpacesItems';
   static const signupMainScreen = 'signUpMainScreen';
   static const mobileSignUp = 'mobileSignUp';
   static const completeProfile = 'complete_profile';
@@ -157,6 +162,9 @@ class Routes {
   static String currentRoute = '';
   static String previousRoute = '';
 
+  static const viewClaimedUsersOfItem = '/viewClaimedUsersOfItem';
+  static const claimItemPaymentDetails = '/claimItemPaymentDetails';
+
   static Route onGenerateRouted(RouteSettings routeSettings) {
     previousRoute = currentRoute;
 
@@ -181,6 +189,8 @@ class Routes {
     currentRoute = routeSettings.name ?? "";
 
     switch (routeSettings.name) {
+      case dashboard:
+        return DashboardScreen.route(routeSettings);
       case splash:
         return BlurredRouter(builder: ((context) => const SplashScreen()));
       case onboarding:
@@ -189,6 +199,8 @@ class Routes {
         return WelcomeScreen.route(routeSettings);
       case accountType:
         return AccountTypeScreen.route(routeSettings);
+      case privateSpacesItems:
+        return BlurredRouter(builder: ((context) => const PrivateSpacesItemsScreen()));
       case main:
         return MainActivity.route(routeSettings);
       case login:
@@ -247,6 +259,11 @@ class Routes {
         return TransactionHistory.route(routeSettings);
       case blockedUserListScreen:
         return BlockedUserListScreen.route(routeSettings);
+
+      case viewClaimedUsersOfItem:
+        return ViewClaimedUsersOfItemScreen.route(routeSettings);
+      case claimItemPaymentDetails:
+        return ClaimItemPaymentDetailsScreen.route(routeSettings);
       case countriesScreen:
         return CountriesScreen.route(routeSettings);
 

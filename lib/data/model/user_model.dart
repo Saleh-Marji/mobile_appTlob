@@ -33,6 +33,7 @@ class UserModel {
   int? totalReviews;
   double? averageRating;
   bool? isFeatured;
+  int? scoreValue;
 
   UserModel({
     this.address,
@@ -111,6 +112,7 @@ class UserModel {
     totalReviews = json['total_reviews'];
     averageRating = double.tryParse(json['average_rating'] ?? '');
     isFeatured = json['is_featured'] == 1 || json['is_featured'] == true;
+    scoreValue = json['score']?['score'];
   }
 
   String? get location => country == null || city == null ? null : '$city, $country';
@@ -139,6 +141,7 @@ class UserModel {
     data['categories'] = categoriesIds?.join(',');
     data['show_personal_details'] = isPersonalDetailShow;
     data['is_verified'] = isVerified;
+    data['score_value'] = scoreValue;
     data['bio'] = bio;
     data['website'] = website;
     data['facebook'] = facebook;

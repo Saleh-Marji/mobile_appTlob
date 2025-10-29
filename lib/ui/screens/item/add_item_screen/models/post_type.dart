@@ -6,6 +6,6 @@ enum PostType {
   @override
   String toString() => switch (this) {
         PostType.service => "Service",
-        PostType.experience => "Experience",
+        PostType.experience => "Opportunity",
       };
 }

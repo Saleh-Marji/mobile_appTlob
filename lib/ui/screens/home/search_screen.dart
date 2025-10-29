@@ -30,7 +30,6 @@ import 'package:tlobni/utils/app_icon.dart';
 import 'package:tlobni/utils/constant.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/extensions/lib/iterable.dart';
-import 'package:tlobni/utils/extensions/lib/list.dart';
 import 'package:tlobni/utils/extensions/lib/widget_iterable.dart';
 import 'package:tlobni/utils/ui_utils.dart';
 
@@ -204,7 +203,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                 focusedBorder: border,
                 fillColor: fillColor,
                 filled: true,
-                hintText: isProviderSearch ? 'Search providers...' : 'Search listings...',
+                hintText: isProviderSearch ? 'Search Providers...' : 'Search Opportunities...',
                 prefixIcon: Padding(
                   padding: EdgeInsets.symmetric(horizontal: 10),
                   child: Icon(Icons.search, color: Colors.grey),
@@ -287,6 +286,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
         averageRating: provider.averageRating,
         totalReviews: provider.totalReviews,
         isFeatured: provider.isFeatured,
+        scoreValue: provider.scoreValue,
       );
 
   @override
@@ -366,8 +366,8 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
           isInternetError: state is SearchProvidersFailure && state.errorMessage is ApiException && state.errorMessage == 'no-internet',
           isLoadingMore: state is SearchProvidersSuccess && state.isLoadingMore,
           totalResults: state is SearchProvidersSuccess ? state.total : 0,
-          rowCountType: ListRowCountType.one,
           spacing: 10,
+          isItem: false,
           items: state is SearchProvidersSuccess ? state.searchedProviders : [],
           itemBuilder: (item) {
             final user = _fromUserModel(item);
@@ -426,8 +426,8 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
         isInternetError: state is SearchItemFailure && state.errorMessage is ApiException && state.errorMessage == 'no-internet',
         isLoadingMore: state is SearchItemSuccess && state.isLoadingMore,
         totalResults: state is SearchItemSuccess ? state.total : 0,
-        rowCountType: ListRowCountType.two,
         spacing: 10,
+        isItem: true,
         items: state is SearchItemSuccess ? state.searchedItems : [],
         itemBuilder: (item) => ItemContainer(small: true, item: item),
       );
@@ -466,9 +466,9 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
     required bool isInternetError,
     required bool isLoadingMore,
     required int totalResults,
-    required ListRowCountType rowCountType,
     required double spacing,
     required List<ITEM> items,
+    required bool isItem,
     required Widget Function(ITEM item) itemBuilder,
   }) =>
       Column(
@@ -481,7 +481,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
           Expanded(
             child: Builder(
               builder: (context) {
-                if (isLoading) return _shimmerEffect(rowCountType);
+                if (isLoading) return _shimmerEffect(isItem);
 
                 if (isError) {
                   return SingleChildScrollView(
@@ -513,35 +513,13 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                       SizedBox(height: 10),
                       Expanded(
                         child: Builder(builder: (context) {
-                          final rowCount = rowCountType == ListRowCountType.one ? items.length : (items.length / 2).ceil();
                           return ListView.separated(
                             controller: scrollController,
                             separatorBuilder: (_, __) => SizedBox.square(dimension: spacing * 2),
                             padding: EdgeInsets.all(spacing),
-                            itemCount: rowCount,
+                            itemCount: items.length,
                             itemBuilder: (context, index) {
-                              final start = rowCountType == ListRowCountType.one ? index : index * 2;
-                              final end = start + 1;
-                              final itemContainers = [
-                                items[start],
-                                if (rowCountType == ListRowCountType.two) items.getSafe(end),
-                              ].whereNotNull().map(itemBuilder);
-                              return IntrinsicHeight(
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: itemContainers.length == 1
-                                      ? [
-                                          if (rowCountType == ListRowCountType.two) (1, SizedBox()),
-                                          (2, itemContainers.first),
-                                          if (rowCountType == ListRowCountType.two) (1, SizedBox()),
-                                        ].mapExpandedSpaceBetween(spacing / 2)
-                                      : [
-                                          (1, itemContainers.first),
-                                          (1, itemContainers.last),
-                                        ].mapExpandedSpaceBetween(spacing),
-                                ),
-                              );
+                              return itemBuilder(items[index]);
                             },
                           );
                         }),
@@ -573,7 +551,7 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
         ],
       );
 
-  ListView _shimmerEffect(ListRowCountType rowCountType) {
+  ListView _shimmerEffect(bool isItem) {
     return ListView.separated(
       padding: const EdgeInsets.symmetric(
         vertical: 10 + defaultPadding,
@@ -582,9 +560,8 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
       itemCount: 5,
       separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
-        return switch (rowCountType) {
-          // TODO: Handle this case.
-          ListRowCountType.one => Container(
+        return switch (isItem) {
+          false => Container(
               width: double.maxFinite,
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
               decoration: BoxDecoration(
@@ -627,8 +604,8 @@ class SearchScreenState extends State<SearchScreen> with TickerProviderStateMixi
                 ],
               ),
             ),
-          ListRowCountType.two => Row(
-              children: List.generate(2, (_) => CustomShimmer(height: 300)).mapExpandedSpaceBetween(10),
+          true => Row(
+              children: List.generate(1, (_) => CustomShimmer(height: 330)).mapExpandedSpaceBetween(10),
             ),
         };
       },

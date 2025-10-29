@@ -98,7 +98,7 @@ class WelcomeScreen extends StatelessWidget {
 
             // Tagline
             DescriptionText(
-              "Elite Providers. Premium Services\nUnforgettable Experiences\nBook Now",
+              "The Infrastructure for Opportunity.\nBe More, Every Day.",
               textAlign: TextAlign.center,
               color: kColorGrey,
             ),

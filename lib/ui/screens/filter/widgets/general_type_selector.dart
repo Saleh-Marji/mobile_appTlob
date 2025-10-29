@@ -5,18 +5,26 @@ import 'package:tlobni/utils/extensions/extensions.dart';
 import 'package:tlobni/utils/extensions/lib/widget_iterable.dart';
 
 class GeneralTypeSelector<T> extends StatelessWidget {
-  const GeneralTypeSelector({super.key, required this.values, this.selectedValue, required this.valueToString, required this.onChanged});
+  const GeneralTypeSelector({
+    super.key,
+    required this.values,
+    this.selectedValue,
+    required this.valueToString,
+    required this.onChanged,
+    this.spacing,
+  });
 
   final List<T> values;
   final T? selectedValue;
   final String Function(T value) valueToString;
   final void Function(T? value) onChanged;
+  final double? spacing;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.start,
-      children: values.map(_listingTypeButton).mapExpandedSpaceBetween(10),
+      children: values.map(_listingTypeButton).mapExpandedSpaceBetween(spacing ?? 10),
     );
   }
 

@@ -40,6 +40,7 @@ import 'package:tlobni/utils/extensions/lib/iterable_iterable.dart';
 import 'package:tlobni/utils/extensions/lib/widget_iterable.dart';
 import 'package:tlobni/utils/google_maps_service.dart';
 import 'package:tlobni/utils/helper_utils.dart';
+import 'package:tlobni/utils/hive_utils.dart';
 import 'package:tlobni/utils/image_picker.dart';
 import 'package:tlobni/utils/ui_utils.dart';
 import 'package:tlobni/utils/validator.dart';
@@ -119,12 +120,15 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
   bool _atMyLocation = false;
   bool _isVirtual = false;
   Set<String> _locationTypes = {};
-  DateTime? _expirationDate = DateTime.now();
-  TimeOfDay? _expirationTime = TimeOfDay.now();
+  DateTime? _date = DateTime.now();
+  TimeOfDay? _time = TimeOfDay.now();
   AddressComponent? formattedAddress;
   bool _isSubmitting = false; // Add loading state for submit button
   CategoryModel? _selectedCategory;
-  bool forACause = false;
+  bool _forACause = false;
+  int? _slotsAvailable = 1;
+  late EndTimerOption? _endTimerOption = isEdit ? null : EndTimerOption.h24;
+  ItemAudience? _audience = ItemAudience.public;
 
   // Add missing controllers
   final TextEditingController cityTextController = TextEditingController();
@@ -272,7 +276,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
 
   Widget _serviceTitle() {
     return _field(
-      label: '${widget.postType.toString()} Title',
+      label: 'Title',
       child: _customTextField(
         borderColor: context.color.secondary,
         hint: 'Enter ${widget.postType.toString().toLowerCase()} title',
@@ -329,6 +333,8 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
       );
 
   Color get _greyBorderColor => Color(0xffe6e6e6);
+
+  List<int> get _slotsAvailableOptions => List.generate(25, (index) => index + 1);
 
   Widget _price() => _field(
         label: 'Price',
@@ -418,26 +424,26 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
         child: DescriptionText(text),
       );
 
-  Widget _endDateField() => _endDateButton(_formatExpirationDate(), _pickExpirationDate);
+  Widget _dateField() => _endDateButton(_formatDate(), _pickDate);
 
-  String _formatExpirationDate() {
-    if (_expirationDate == null) return 'Select expiration Date';
-    return DateFormat('MMM d, y').format(_expirationDate!);
+  String _formatDate() {
+    if (_date == null) return 'Select Date';
+    return DateFormat('MMM d, y').format(_date!);
   }
 
-  Widget _endTimeField() => _endDateButton(_formatExpirationTime(), _pickExpirationTime);
+  Widget _dateAndTimeField() => _endDateButton(_formatTime(), _pickTime);
 
-  String _formatExpirationTime() {
-    if (_expirationTime == null) return 'Select expiration Time';
-    return _expirationTime!.format(context);
+  String _formatTime() {
+    if (_time == null) return 'Select Time';
+    return _time!.format(context);
   }
 
-  Widget _endDateAndTime() => _field(
-        label: 'End Date & Time',
+  Widget _dateAndTime() => _field(
+        label: 'Date & Time',
         child: Row(
           children: [
-            _endDateField(),
-            _endTimeField(),
+            _dateField(),
+            _dateAndTimeField(),
           ].mapExpandedSpaceBetween(10),
         ),
       );
@@ -497,10 +503,10 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
         child: _specialTagField('corporate_package'),
       );
 
-  Widget _forACause() => _field(
+  Widget _forACauseWidget() => _field(
         label: 'Philanthropic Event',
         required: null,
-        child: _switchField(forACause, (val) => forACause = val),
+        child: _switchField(_forACause, (val) => _forACause = val),
       );
 
   Widget _forACauseText() => _field(
@@ -508,46 +514,97 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
         child: _customTextField(
           borderColor: kColorSecondaryBeige,
           maxLines: 4,
-          hint: 'Describe the philanthropic aspects of this experience',
+          hint: 'Describe the philanthropic aspects of this opportunity',
           controller: forACauseTextController,
         ),
       );
 
+  Widget _slotsAvailableWidget() => _field(
+        label: 'Slots Available',
+        child: FormDropdown<int>(
+          selectedValue: _slotsAvailable,
+          items: _slotsAvailableOptions.map((e) => (e, e.toString())).toList(),
+          onSelected: (slots) {
+            setState(() => _slotsAvailable = slots);
+            return true;
+          },
+        ),
+      );
+
+  Widget _endTimerOptionWidget() => _field(
+      label: 'End Timer',
+      child: FormDropdown<EndTimerOption?>(
+        selectedValue: _endTimerOption,
+        items: [if (isEdit) null, ...EndTimerOption.values].map((e) => (e, e == null ? 'Keep as is' : e.toString())).toList(),
+        onSelected: (value) {
+          setState(() => _endTimerOption = value);
+          return true;
+        },
+      ));
+
+  Widget _audienceWidget() => _field(
+        label: 'Audience',
+        child: Wrap(
+              runSpacing: 10,
+              spacing: 10,
+              children: ItemAudience.values
+                  .map((e) => _buildRadioOption(
+                        context,
+                        title: e.toString(),
+                        value: e,
+                        groupValue: _audience,
+                        onChanged: (val) => setState(() => _audience = val),
+                      ))
+                  .toList(),
+            ) ??
+            FormDropdown<ItemAudience>(
+              selectedValue: _audience,
+              items: ItemAudience.values.map((e) => (e, e.toString())).toList(),
+              onSelected: (value) {
+                setState(() => _audience = value);
+                return true;
+              },
+            ),
+      );
+
   Widget _itemDetails() => _section(
-        title: '${widget.postType.toString()} Details',
+        title: 'Details',
         children: [
-          if (widget.postType == PostType.experience) _endDateAndTime() else _serviceLocation(),
+          if (widget.postType == PostType.experience) _dateAndTime() else _serviceLocation(),
           _exclusiveForWomen(),
           _corporatePackage(),
+          _slotsAvailableWidget(),
+          _endTimerOptionWidget(),
+          if (HiveUtils.isBusiness()) _audienceWidget(),
           if (widget.postType == PostType.experience) ...[
-            _forACause(),
-            if (forACause) _forACauseText(),
+            _forACauseWidget(),
+            if (_forACause) _forACauseText(),
           ]
         ],
       );
 
-  void _pickExpirationTime() async {
+  void _pickTime() async {
     final TimeOfDay? picked = await showTimePicker(
       context: context,
-      initialTime: _expirationTime ?? TimeOfDay.now(),
+      initialTime: _time ?? TimeOfDay.now(),
     );
-    if (picked != null && picked != _expirationTime) {
+    if (picked != null && picked != _time) {
       setState(() {
-        _expirationTime = picked;
+        _time = picked;
       });
     }
   }
 
-  void _pickExpirationDate() async {
+  void _pickDate() async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: _expirationDate ?? DateTime.now().add(Duration(days: 1)),
+      initialDate: _date ?? DateTime.now().add(Duration(days: 1)),
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(Duration(days: 365)),
     );
-    if (picked != null && picked != _expirationDate) {
+    if (picked != null && picked != _date) {
       setState(() {
-        _expirationDate = picked;
+        _date = picked;
       });
     }
   }
@@ -593,7 +650,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
       );
 
   Widget _submitButton() => PrimaryButton.text(
-        '${isEdit ? 'Update' : 'Create'} ${widget.postType}',
+        '${isEdit ? 'Update' : 'Create'}',
         padding: EdgeInsets.all(20),
         onPressed: _onSubmitPressed,
       );
@@ -607,7 +664,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
           appBar: UiUtils.buildAppBar(
             context,
             showBackButton: true,
-            title: '${isEdit ? 'Edit' : 'Create'} ${widget.postType == PostType.experience ? 'an Experience' : 'a Service'}',
+            title: '${isEdit ? 'Edit' : 'Create'} ${widget.postType == PostType.experience ? 'an Opportunity' : 'a Service'}',
           ),
           body: RefreshIndicator(
             onRefresh: _onRefresh,
@@ -701,7 +758,19 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
         cloudData['contact'] = adPhoneNumberController.text;
 
         if (widget.postType == PostType.experience) {
-          cloudData['for_a_cause_text'] = forACause ? forACauseTextController.text : null;
+          cloudData['for_a_cause_text'] = _forACause ? forACauseTextController.text : null;
+        }
+
+        if (_audience != null) cloudData['audience'] = _audience?.name;
+
+        if (_slotsAvailable != null) cloudData['slots'] = _slotsAvailable;
+
+        if (_endTimerOption != null) {
+          final hours = _endTimerOption!.toHours();
+          DateTime endDateTime = DateTime.now().add(Duration(hours: hours));
+          cloudData['expiration_date'] = DateTime(endDateTime.year, endDateTime.month, endDateTime.day).toIso8601String();
+          cloudData['expiration_time'] = DateFormat('HH:mm').format(endDateTime);
+          cloudData['end_timer_option'] = _endTimerOption!.name;
         }
 
         // Handle the video link - validate URL format or set to empty
@@ -779,11 +848,11 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
 
         // Add expiration date/time if applicable
         if (postType == PostType.experience) {
-          if (_expirationDate != null) {
-            cloudData['expiration_date'] = _expirationDate!.toIso8601String();
+          if (_date != null) {
+            cloudData['item_date'] = _date!.toIso8601String();
           }
-          if (_expirationTime != null) {
-            cloudData['expiration_time'] = '${_expirationTime!.hour}:${_expirationTime!.minute}';
+          if (_time != null) {
+            cloudData['item_time'] = '${_time!.hour.toString().padLeft(2, '0')}:${_time!.minute.toString().padLeft(2, '0')}';
           }
         }
 
@@ -1725,151 +1794,58 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
     );
   }
 
-  // Auto-Expiration Date & Time
-  Widget _buildExpirationDateTimeSection(BuildContext context) {
-    // Only show for Experience type
-    dynamic rawPostType = getCloudData("post_type");
-    PostType? postType;
-
-    if (rawPostType is PostType) {
-      postType = rawPostType;
-    } else {
-      // Handle the case where post_type is not properly cast
-      return SizedBox.shrink();
-    }
-
-    if (postType != PostType.experience) return SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        CustomText(
-          "Auto-Expiration Date & Time".translate(context) + " *",
-          fontSize: context.font.large,
-          fontWeight: FontWeight.w500,
-        ),
-        SizedBox(height: 5),
-        CustomText(
-          "Experience disappears when the event ends".translate(context),
-          fontSize: context.font.small,
-          color: context.color.textLightColor,
-        ),
-        SizedBox(height: 10),
-        Row(
-          children: [
-            Expanded(
-              child: GestureDetector(
-                onTap: _pickExpirationDate,
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 15),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: context.color.borderColor),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      CustomText(
-                        _expirationDate == null
-                            ? "Select Date".translate(context)
-                            : "${_expirationDate!.day}/${_expirationDate!.month}/${_expirationDate!.year}",
-                        color: _expirationDate == null ? context.color.textDefaultColor.withOpacity(0.5) : context.color.textDefaultColor,
-                      ),
-                      Icon(
-                        Icons.calendar_today,
-                        size: 18,
-                        color: context.color.textLightColor,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(width: 12),
-            Expanded(
-              child: GestureDetector(
-                onTap: _pickExpirationTime,
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 15),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: context.color.borderColor),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      CustomText(
-                        _expirationTime == null ? "Select Time".translate(context) : "${_expirationTime!.format(context)}",
-                        color: _expirationTime == null ? context.color.textDefaultColor.withOpacity(0.5) : context.color.textDefaultColor,
-                      ),
-                      Icon(
-                        Icons.access_time,
-                        size: 18,
-                        color: context.color.textLightColor,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: 15),
-      ],
-    );
-  }
-
   // Helper widgets - Fixed radio button appearance
-  Widget _buildRadioOption(
+  Widget _buildRadioOption<T>(
     BuildContext context, {
     required String title,
-    required String value,
-    required String? groupValue,
-    required Function(String?) onChanged,
+    required T value,
+    required T? groupValue,
+    required Function(T?) onChanged,
   }) {
     bool isSelected = groupValue == value;
 
     return InkWell(
       onTap: () => onChanged(value),
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: EdgeInsets.symmetric(horizontal: 4, vertical: 8) + EdgeInsets.only(right: 8),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF0F2137) : Colors.transparent,
+          color: isSelected ? kColorNavyBlue : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isSelected ? const Color(0xFF0F2137) : context.color.borderColor,
+            color: kColorNavyBlue,
             width: isSelected ? 1.5 : 1.0,
           ),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Theme(
-              data: ThemeData(
-                unselectedWidgetColor: context.color.borderColor,
+        child: RadioGroup<T>(
+          groupValue: groupValue,
+          onChanged: onChanged,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Theme(
+                data: ThemeData(
+                  unselectedWidgetColor: context.color.borderColor,
+                ),
+                child: Radio<T>(
+                  value: value,
+                  side: BorderSide(width: 1.5),
+                  fillColor: WidgetStateProperty.resolveWith<Color>((Set<WidgetState> states) {
+                    if (states.contains(WidgetState.selected)) {
+                      return kColorSecondaryBeige;
+                    }
+                    return kColorNavyBlue;
+                  }),
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
               ),
-              child: Radio<String>(
-                value: value,
-                groupValue: groupValue,
-                onChanged: onChanged,
-                activeColor: Colors.white,
-                fillColor: MaterialStateProperty.resolveWith<Color>((Set<MaterialState> states) {
-                  if (states.contains(MaterialState.selected)) {
-                    return Colors.white;
-                  }
-                  return context.color.borderColor;
-                }),
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              Flexible(
+                child: DescriptionText(
+                  title.translate(context),
+                  color: isSelected ? kColorSecondaryBeige : null,
+                ),
               ),
-            ),
-            Flexible(
-              child: CustomText(
-                title.translate(context),
-                color: isSelected ? context.color.primaryColor : context.color.textColorDark,
-                fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -1957,7 +1933,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
     // In edit mode, we may have already retrieved the location from the item
     bool isEdit = widget.isEdit == true;
 
-    if (postType == PostType.experience && forACause) {
+    if (postType == PostType.experience && _forACause) {
       if (forACauseTextController.text.trim().isEmpty) {
         missingFields.add("Philanthropic Description");
       }
@@ -1971,11 +1947,17 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
 
     // For experience type, check expiration date and time
     if (postType == PostType.experience) {
-      if (_expirationDate == null && !(isEdit && item?.expirationDate != null)) {
-        missingFields.add("Expiration Date");
+      if (_date == null) {
+        missingFields.add("Date");
       }
-      if (_expirationTime == null && !(isEdit && item?.expirationTime != null && item!.expirationTime!.isNotEmpty)) {
-        missingFields.add("Expiration Time");
+      if (_time == null) {
+        missingFields.add("Time");
+      }
+      if (_slotsAvailable == null) {
+        missingFields.add("Slots Available");
+      }
+      if (_endTimerOption == null && !isEdit) {
+        missingFields.add("End Timer Option");
       }
     }
 
@@ -2000,11 +1982,14 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
     adPriceController.text = item.price?.toStringAsFixed(2) ?? '';
     _selectedCategory = item.category;
     _priceType = item.priceType;
-    _expirationDate = item.expirationDate;
-    if (item.expirationTime != null) {
-      final split = item.expirationTime!.split(':');
-      _expirationTime = TimeOfDay(hour: int.parse(split[0]), minute: int.parse(split[1]));
+    _date = item.itemDate;
+    if (item.itemTime != null) {
+      final split = item.itemTime!.split(':');
+      _time = TimeOfDay(hour: int.parse(split[0]), minute: int.parse(split[1]));
     }
+    _slotsAvailable = item.slots;
+    _endTimerOption = null;
+    _audience = item.audience;
     if (item.location != null) {
       locationController.text = item.location!;
       _updateLocationData({
@@ -2024,7 +2009,7 @@ class _AddItemDetailsState extends CloudState<AddItemDetails> {
     titleImageURL = item.image ?? '';
     mixedItemImageList = item.galleryImages?.map((e) => e.image).toList() ?? [];
     _videoLinkController.text = item.videoLink ?? '';
-    forACause = item.isForACause;
+    _forACause = item.isForACause;
     forACauseTextController.text = item.forACauseText ?? '';
   }
 }

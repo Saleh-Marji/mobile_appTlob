@@ -119,13 +119,13 @@ class _ItemListingFilterScreenState extends State<ItemListingFilterScreen> {
   @override
   Widget build(BuildContext context) {
     return GeneralFilterScreen(
-      title: 'Filter Listings',
+      title: 'Filter',
       onResetPressed: _resetFilter,
       onApplyPressed: _applyFilter,
       sections: [
         ('Categories'.translate(context), _buildCategoryWidget()),
         ('locationLbl'.translate(context), _buildLocationWidget()),
-        ('Listing Type'.translate(context), _listingTypes()),
+        // ('Listing Type'.translate(context), _listingTypes()),
         ('Price Range', _buildPriceRangeWidget()),
         ('Special Filters', _buildSpecialFilters()),
         ('Rating'.translate(context), _buildRatingFilter()),

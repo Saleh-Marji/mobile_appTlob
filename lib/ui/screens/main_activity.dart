@@ -11,16 +11,20 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:tlobni/app/app_theme.dart';
 import 'package:tlobni/app/routes.dart';
 import 'package:tlobni/data/cubits/item/search_item_cubit.dart';
 import 'package:tlobni/data/cubits/subscription/fetch_user_package_limit_cubit.dart';
 import 'package:tlobni/data/cubits/system/fetch_system_settings_cubit.dart';
+import 'package:tlobni/data/model/category_model.dart';
 import 'package:tlobni/data/model/item/item_model.dart';
 import 'package:tlobni/data/model/system_settings_model.dart';
-import 'package:tlobni/ui/screens/chat/chat_list_screen.dart';
+import 'package:tlobni/ui/screens/claims_screen.dart';
 import 'package:tlobni/ui/screens/favorite_screen.dart';
+import 'package:tlobni/ui/screens/receipts_screen.dart';
 import 'package:tlobni/ui/screens/home/home_screen.dart';
 import 'package:tlobni/ui/screens/home/search_screen.dart';
+import 'package:tlobni/ui/screens/item/add_item_screen/models/post_type.dart';
 import 'package:tlobni/ui/screens/item/my_items/my_items_screen.dart';
 import 'package:tlobni/ui/screens/user_profile/profile_screen.dart';
 import 'package:tlobni/ui/screens/widgets/animated_routes/blur_page_route.dart';
@@ -28,6 +32,7 @@ import 'package:tlobni/ui/screens/widgets/blurred_dialoge_box.dart';
 import 'package:tlobni/ui/screens/widgets/maintenance_mode.dart';
 import 'package:tlobni/ui/theme/theme.dart';
 import 'package:tlobni/utils/app_icon.dart';
+import 'package:tlobni/utils/cloud_state/cloud_state.dart';
 import 'package:tlobni/utils/constant.dart';
 import 'package:tlobni/utils/custom_text.dart';
 import 'package:tlobni/utils/error_filter.dart';
@@ -93,7 +98,7 @@ class MainActivity extends StatefulWidget {
   }
 }
 
-class MainActivityState extends State<MainActivity> with TickerProviderStateMixin {
+class MainActivityState extends CloudState<MainActivity> with TickerProviderStateMixin {
   PageController pageController = PageController(initialPage: 0);
   int currentTab = 0;
   static final FirebaseMessaging firebaseMessaging = FirebaseMessaging.instance;
@@ -285,8 +290,8 @@ class MainActivityState extends State<MainActivity> with TickerProviderStateMixi
 
   late List<Widget> pages = [
     HomeScreen(from: widget.from),
-    ChatListScreen(),
-    HiveUtils.getUserType() == "Client" ? const FavoriteScreen(showBack: false) : const ItemsScreen(),
+    ClaimsScreen(),
+    HiveUtils.getUserType() == "Client" ? const ReceiptsScreen(showBack: false) : const ItemsScreen(),
     const ProfileScreen(),
   ];
 
@@ -368,7 +373,7 @@ class MainActivityState extends State<MainActivity> with TickerProviderStateMixi
       UiUtils.checkUser(
           onNotGuest: () {
             // Re-initialize the page dynamically based on current user role
-            pages[2] = HiveUtils.getUserType() == "Client" ? const FavoriteScreen(showBack: false) : const ItemsScreen();
+            pages[2] = HiveUtils.getUserType() == "Client" ? const ReceiptsScreen(showBack: false) : const ItemsScreen();
 
             currentTab = index;
             pageController.jumpToPage(currentTab);
@@ -380,9 +385,7 @@ class MainActivityState extends State<MainActivity> with TickerProviderStateMixi
     } else {
       currentTab = index;
       pageController.jumpToPage(currentTab);
-      setState(
-        () {},
-      );
+      setState(() {});
     }
   }
 
@@ -406,7 +409,7 @@ class MainActivityState extends State<MainActivity> with TickerProviderStateMixi
         padding: const EdgeInsets.symmetric(vertical: 8.0),
         child: Row(mainAxisSize: MainAxisSize.max, mainAxisAlignment: MainAxisAlignment.spaceAround, children: <Widget>[
           buildBottomNavigationbarItem(0, AppIcons.homeNav, AppIcons.homeNavActive, "homeTab".translate(context)),
-          buildBottomNavigationbarItem(1, AppIcons.chatNav, AppIcons.chatNavActive, "chat".translate(context)),
+          buildBottomNavigationbarItem(1, AppIcons.myClaimsNav, AppIcons.myClaimsNav, 'Claims'),
           // Only show post button if user is a provider
           isProvider
               ? BlocListener<FetchUserPackageLimitCubit, FetchUserPackageLimitState>(
@@ -459,7 +462,19 @@ class MainActivityState extends State<MainActivity> with TickerProviderStateMixi
                       );
                     }
                     if (state is FetchUserPackageLimitInSuccess) {
-                      Navigator.pushNamed(context, Routes.selectPostTypeScreen);
+                      // Store the selected post type in cloud data
+                      addCloudData("post_type", PostType.experience);
+
+                      // Navigate to add item details screen with breadcrumb items
+                      Navigator.pushNamed(
+                        context,
+                        Routes.addItemDetails,
+                        arguments: <String, dynamic>{
+                          "breadCrumbItems": <CategoryModel>[],
+                          "isEdit": false,
+                          'postType': PostType.experience,
+                        },
+                      );
                     }
                   },
                   child: Transform(
@@ -487,9 +502,9 @@ class MainActivityState extends State<MainActivity> with TickerProviderStateMixi
               : SizedBox(width: 10), // Fixed spacing when not a provider
           buildBottomNavigationbarItem(
             2,
-            isClient ? AppIcons.favoriteNav : AppIcons.myAdsNav,
-            isClient ? AppIcons.favoriteNavActive : AppIcons.myAdsNavActive,
-            isClient ? "favorites".translate(context) : 'Listings',
+            isClient ? AppIcons.myReceiptsNav : AppIcons.myAdsNav,
+            isClient ? AppIcons.myReceiptsNav : AppIcons.myAdsNavActive,
+            isClient ? 'My Receipts' : 'My Drops',
           ),
           buildBottomNavigationbarItem(3, AppIcons.profileNav, AppIcons.profileNavActive, "profileTab".translate(context))
         ]),
@@ -535,7 +550,7 @@ class MainActivityState extends State<MainActivity> with TickerProviderStateMixi
                   height: iconSize,
                   child: UiUtils.getSvg(
                     activeSvg,
-                    color: context.color.territoryColor,
+                    color: kColorNavyBlue,
                   ),
                 )
               else

@@ -13,16 +13,20 @@ import 'package:tlobni/data/cubits/chat/get_buyer_chat_users_cubit.dart';
 import 'package:tlobni/data/cubits/favorite/favorite_cubit.dart';
 import 'package:tlobni/data/cubits/favorite/manage_fav_cubit.dart';
 import 'package:tlobni/data/cubits/home/fetch_home_all_items_cubit.dart';
-import 'package:tlobni/data/cubits/home/fetch_home_screen_cubit.dart';
 import 'package:tlobni/data/cubits/item/manage_item_cubit.dart';
+import 'package:tlobni/data/cubits/item/space_items_cubit.dart';
+import 'package:tlobni/data/cubits/private_spaces_home_cubit.dart';
 import 'package:tlobni/data/cubits/slider_cubit.dart';
 import 'package:tlobni/data/cubits/system/fetch_system_settings_cubit.dart';
 import 'package:tlobni/data/cubits/system/get_api_keys_cubit.dart';
+import 'package:tlobni/data/cubits/user_score_cubit.dart';
 import 'package:tlobni/data/model/category_model.dart';
 import 'package:tlobni/data/model/item/item_model.dart';
 import 'package:tlobni/data/model/item_filter_model.dart';
 import 'package:tlobni/data/model/notification_data.dart';
 import 'package:tlobni/data/model/system_settings_model.dart';
+import 'package:tlobni/data/model/user_score.dart';
+import 'package:tlobni/ui/screens/chat/chat_list_screen.dart';
 import 'package:tlobni/ui/screens/home/search_screen.dart';
 import 'package:tlobni/ui/screens/home/slider_widget.dart';
 import 'package:tlobni/ui/screens/home/widgets/category_widget_home.dart';
@@ -96,6 +100,8 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, A
   //
   late final ScrollController _scrollController = ScrollController();
 
+  List<SpaceItemsCubit> _spaceItemsCubits = [];
+
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey = GlobalKey<RefreshIndicatorState>();
 
   // Add these new properties
@@ -156,10 +162,27 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, A
           backgroundColor: const Color.fromARGB(0, 0, 0, 0),
           actions: [
             // Add notification icon with badge
+            _chatAppbarAction(),
             Padding(
-              padding: EdgeInsetsDirectional.only(end: 15.0),
+              padding: EdgeInsetsDirectional.only(end: 10.0),
               child: _notificationsAppbarAction(),
             ),
+            BlocBuilder<UserScoreCubit, UserScoreState>(
+              builder: (context, state) {
+                final score = context.read<UserScoreCubit>().score;
+                if (score == null) return SizedBox();
+                return Padding(
+                  padding: EdgeInsetsDirectional.only(end: 10.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SmallText('${score.type == UserScoreType.impact ? 'IS: ' : 'GS: '}${score.score}', weight: FontWeight.bold),
+                    ],
+                  ),
+                );
+              },
+            ),
+            SizedBox(width: 5),
           ],
         ),
         backgroundColor: context.color.primaryColor,
@@ -176,31 +199,33 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, A
                 const SizedBox(height: 10),
                 _searchField(),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 10),
 
-                // Exclusive Experiences Section
-                _buildExclusiveExperiences(),
+                // Public Feed Section
+                _buildPublicFeed(),
 
                 const SizedBox(height: 10),
+
+                _buildPrivateSpaces(),
 
                 // Categories
                 const CategoryWidgetHome(),
 
                 const SizedBox(height: 25),
 
-                _buildFeaturedProviders(),
+                _buildFeaturedMakers(),
 
-                const SizedBox(height: 30),
-                // Newest Listings Section
-                _buildNewestListings(),
+                // const SizedBox(height: 30),
+                // // Newest Listings Section
+                // _buildNewestListings(),
 
-                const SizedBox(height: 30),
-                // Women-Exclusive Services
-                _buildWomenExclusiveServices(),
+                // const SizedBox(height: 30),
+                // // Women-Exclusive Services
+                // _buildWomenExclusiveServices(),
 
-                const SizedBox(height: 30),
-                // Corporate & Business Packages
-                _buildCorporatePackages(),
+                // const SizedBox(height: 30),
+                // // Corporate & Business Packages
+                // _buildCorporatePackages(),
 
                 const SizedBox(height: 20),
               ],
@@ -285,31 +310,33 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, A
     notificationPermissionChecker();
     LocalAwesomeNotification().init(context);
     ///////////////////////////////////////
-    context.read<SliderCubit>().fetchSlider(
-          context,
-        );
+    // context.read<SliderCubit>().fetchSlider(
+    //       context,
+    //     );
     context.read<FetchCategoryCubit>().fetchCategories(
           type: CategoryType.serviceExperience,
         );
-    context.read<FetchHomeScreenCubit>().fetch(
-        city: HiveUtils.getCityName(), areaId: HiveUtils.getAreaId(), country: HiveUtils.getCountryName(), state: HiveUtils.getStateName());
-    context.read<FetchHomeAllItemsCubit>().fetch(
-        city: HiveUtils.getCityName(),
-        areaId: HiveUtils.getAreaId(),
-        radius: HiveUtils.getNearbyRadius(),
-        longitude: HiveUtils.getLongitude(),
-        latitude: HiveUtils.getLatitude(),
-        country: HiveUtils.getCountryName(),
-        state: HiveUtils.getStateName());
+    // context.read<PrivateSpacesCubit>().fetchPrivateSpaces();
+    context.read<PrivateSpacesHomeCubit>().fetchPrivateSpacesHome();
+    // context.read<FetchHomeScreenCubit>().fetch(
+    //     city: HiveUtils.getCityName(), areaId: HiveUtils.getAreaId(), country: HiveUtils.getCountryName(), state: HiveUtils.getStateName());
+    // context.read<FetchHomeAllItemsCubit>().fetch(
+    //     city: HiveUtils.getCityName(),
+    //     areaId: HiveUtils.getAreaId(),
+    //     radius: HiveUtils.getNearbyRadius(),
+    //     longitude: HiveUtils.getLongitude(),
+    //     latitude: HiveUtils.getLatitude(),
+    //     country: HiveUtils.getCountryName(),
+    //     state: HiveUtils.getStateName());
 
     // Fetch items for each specialized section
     _fetchExperienceItems();
     _fetchFeaturedUsers();
-    _fetchWomenExclusiveItems();
-    _fetchCorporatePackageItems();
-    _fetchNewestItems();
+    // _fetchWomenExclusiveItems();
+    // _fetchCorporatePackageItems();
+    // _fetchNewestItems();
 
-    context.read<FavoriteCubit>().getFavorite();
+    // context.read<FavoriteCubit>().getFavorite();
     //fetchApiKeys();
     context.read<GetBuyerChatListCubit>().fetch();
     context.read<BlockedUsersListCubit>().blockedUsersList();
@@ -332,21 +359,21 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, A
       }
     });
 
-    _scrollController.addListener(() {
-      if (_scrollController.isEndReached()) {
-        if (context.read<FetchHomeAllItemsCubit>().hasMoreData()) {
-          context.read<FetchHomeAllItemsCubit>().fetchMore(
-                city: HiveUtils.getCityName(),
-                areaId: HiveUtils.getAreaId(),
-                radius: HiveUtils.getNearbyRadius(),
-                longitude: HiveUtils.getLongitude(),
-                latitude: HiveUtils.getLatitude(),
-                country: HiveUtils.getCountryName(),
-                stateName: HiveUtils.getStateName(),
-              );
-        }
-      }
-    });
+    // _scrollController.addListener(() {
+    //   if (_scrollController.isEndReached()) {
+    // if (context.read<FetchHomeAllItemsCubit>().hasMoreData()) {
+    //   context.read<FetchHomeAllItemsCubit>().fetchMore(
+    //         city: HiveUtils.getCityName(),
+    //         areaId: HiveUtils.getAreaId(),
+    //         radius: HiveUtils.getNearbyRadius(),
+    //         longitude: HiveUtils.getLongitude(),
+    //         latitude: HiveUtils.getLatitude(),
+    //         country: HiveUtils.getCountryName(),
+    //         stateName: HiveUtils.getStateName(),
+    //       );
+    // }
+    //   }
+    // });
   }
 
   Widget setTopRowItem(
@@ -404,33 +431,58 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, A
 
   // Add a new method to build exclusive experiences section
 
-  Widget _buildExclusiveExperiences() {
+  Widget _buildPublicFeed() {
     final items = _experienceItems;
 
     return HomeList(
-      title: 'Exclusive Experiences',
+      title: 'Public Feed',
       isLoading: _isLoadingExperiences,
-      error: _experienceError == null ? null : 'Failed to load experiences: $_experienceError',
-      shimmerEffect: HomeShimmerEffect(
-        itemCount: 3,
-        width: context.screenWidth * 0.85,
-        height: 400,
-        padding: EdgeInsets.symmetric(horizontal: context.screenWidth * 0.05),
-      ),
+      error: _experienceError == null ? null : 'Failed to load opportunities: $_experienceError',
+      shimmerEffect: _itemShimmerEffect(),
       onViewAll: () => _goToItemListingSearch(context,
           filter: ItemFilterModel(
             serviceType: PostType.experience.name,
+            publicOnly: true,
           )),
       children: items.map(_itemContainer).toList(),
     );
   }
 
-  Widget _buildFeaturedProviders() {
+  Widget _buildPrivateSpaces() {
+    return BlocBuilder<PrivateSpacesHomeCubit, PrivateSpacesHomeState>(
+      builder: (context, state) {
+        if (state is! PrivateSpacesHomeSuccess) return SizedBox();
+        if (state.items.isEmpty) return SizedBox();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            HomeList(
+              title: 'Private Spaces',
+              onViewAll: () {
+                Navigator.pushNamed(context, Routes.privateSpacesItems);
+              },
+              // () => _goToItemListingSearch(context,
+              // filter: ItemFilterModel(
+              //   serviceType: PostType.experience.name,
+              //   organizationId: space.id,
+              // )),
+              error: null,
+              isLoading: false,
+              shimmerEffect: _itemShimmerEffect(),
+              children: state.items.map(_itemContainer).toList(),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildFeaturedMakers() {
     return Container(
       color: kColorSecondaryBeige.withValues(alpha: 0.2),
       padding: EdgeInsets.symmetric(vertical: 10),
       child: HomeList(
-        title: 'Featured Providers',
+        title: 'Featured Makers',
         onViewAll: () => _goToProviderSearch(context),
         error: _featuredUsersError == null ? null : 'Failed to load featured users: $_featuredUsersError',
         isLoading: _isLoadingFeaturedUsers,
@@ -799,28 +851,58 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, A
     return false;
   }
 
-  Widget _notificationsAppbarAction() => Stack(
+  Widget _chatAppbarAction() => _appbarAction(
+        icon: UiUtils.getSvg(
+          AppIcons.chatNav,
+          color: context.color.territoryColor,
+        ),
+        onPressed: () {
+          UiUtils.checkUser(
+            onNotGuest: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => ChatListScreen()));
+            },
+            context: context,
+          );
+        },
+        overlay: null,
+      );
+
+  Widget _notificationsAppbarAction() => _appbarAction(
+      icon: Icon(
+        Icons.notifications_outlined,
+        color: context.color.textDefaultColor,
+      ),
+      overlay: HiveUtils.isUserAuthenticated() && _hasUnreadNotifications()
+          ? _getNotificationCount() > 9
+              ? '9+'
+              : _getNotificationCount().toString()
+          : null,
+      onPressed: () {
+        UiUtils.checkUser(
+          onNotGuest: () {
+            Navigator.pushNamed(context, Routes.notificationPage);
+          },
+          context: context,
+        );
+      });
+
+  Widget _appbarAction({
+    required Widget icon,
+    required VoidCallback onPressed,
+    required String? overlay,
+  }) =>
+      Stack(
         children: [
           MaterialButton(
             minWidth: 0,
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             padding: EdgeInsets.all(15),
             shape: CircleBorder(),
-            onPressed: () {
-              UiUtils.checkUser(
-                onNotGuest: () {
-                  Navigator.pushNamed(context, Routes.notificationPage);
-                },
-                context: context,
-              );
-            },
-            child: Icon(
-              Icons.notifications_outlined,
-              color: context.color.textDefaultColor,
-            ),
+            onPressed: onPressed,
+            child: icon,
           ),
           // Notification badge - Only show if there are unread notifications
-          if (HiveUtils.isUserAuthenticated() && _hasUnreadNotifications())
+          if (overlay != null)
             Positioned(
               right: 8,
               top: 8,
@@ -835,7 +917,7 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, A
                   minHeight: 16,
                 ),
                 child: Text(
-                  _getNotificationCount() > 9 ? '9+' : _getNotificationCount().toString(),
+                  overlay,
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 10,
@@ -850,36 +932,38 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, A
 
   Future<void> _onRefresh() async {
     // Fetch all data
-    context.read<SliderCubit>().fetchSlider(context);
+    context.read<UserScoreCubit>().fetchScore();
+    // context.read<SliderCubit>().fetchSlider(context);
     context.read<FetchCategoryCubit>().fetchCategories(
           type: CategoryType.serviceExperience,
         );
-    context.read<FetchHomeScreenCubit>().fetch(
-        city: HiveUtils.getCityName(), areaId: HiveUtils.getAreaId(), country: HiveUtils.getCountryName(), state: HiveUtils.getStateName());
-    context.read<FetchHomeAllItemsCubit>().fetch(
-        city: HiveUtils.getCityName(),
-        areaId: HiveUtils.getAreaId(),
-        radius: HiveUtils.getNearbyRadius(),
-        longitude: HiveUtils.getLongitude(),
-        latitude: HiveUtils.getLatitude(),
-        country: HiveUtils.getCountryName(),
-        state: HiveUtils.getStateName());
+    // context.read<FetchHomeScreenCubit>().fetch(
+    //     city: HiveUtils.getCityName(), areaId: HiveUtils.getAreaId(), country: HiveUtils.getCountryName(), state: HiveUtils.getStateName());
+    context.read<PrivateSpacesHomeCubit>().fetchPrivateSpacesHome();
+    // context.read<FetchHomeAllItemsCubit>().fetch(
+    //     city: HiveUtils.getCityName(),
+    //     areaId: HiveUtils.getAreaId(),
+    //     radius: HiveUtils.getNearbyRadius(),
+    //     longitude: HiveUtils.getLongitude(),
+    //     latitude: HiveUtils.getLatitude(),
+    //     country: HiveUtils.getCountryName(),
+    //     state: HiveUtils.getStateName());
 
     // Refresh all specialized sections
     _fetchExperienceItems();
     _fetchFeaturedUsers();
-    _fetchWomenExclusiveItems();
-    _fetchCorporatePackageItems();
-    _fetchNewestItems();
+    // _fetchWomenExclusiveItems();
+    // _fetchCorporatePackageItems();
+    // _fetchNewestItems();
 
     // Also refresh the favorites
-    context.read<FavoriteCubit>().getFavorite();
+    // context.read<FavoriteCubit>().getFavorite();
   }
 
   Widget _searchField() => Container(
-        margin: EdgeInsets.all(10),
+        margin: EdgeInsets.all(10) - EdgeInsets.only(bottom: 10),
         child: GestureDetector(
-          onTap: () => _goToItemListingSearch(context),
+          onTap: () => _goToItemListingSearch(context, filter: ItemFilterModel()),
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(120),
@@ -891,10 +975,17 @@ class HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin, A
               children: [
                 Icon(Icons.search, size: 25, color: Colors.grey),
                 const SizedBox(width: 10),
-                Expanded(child: SmallText('Search for Services & Experiences', color: Colors.grey)),
+                Expanded(child: SmallText('Explore Open Opportunities...', color: Colors.grey)),
               ],
             ),
           ),
         ),
+      );
+
+  Widget _itemShimmerEffect() => HomeShimmerEffect(
+        itemCount: 3,
+        width: context.screenWidth * 0.85,
+        height: 400,
+        padding: EdgeInsets.symmetric(horizontal: context.screenWidth * 0.05),
       );
 }

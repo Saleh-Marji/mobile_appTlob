@@ -58,7 +58,7 @@ class MyListingsItemContainer extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       spacing: 10,
                       children: [
-                        _itemType(),
+                        // _itemType(),
                         _title(),
                         _description(),
                         _price(),
@@ -94,7 +94,7 @@ class MyListingsItemContainer extends StatelessWidget {
                 color: Color(0xff898989),
                 switch (itemModel.type) {
                   'service' => 'Service',
-                  'experience' => 'Experience',
+                  'experience' => 'Opportunity',
                   _ => '',
                 },
               ),
@@ -159,13 +159,13 @@ class MyListingsItemContainer extends StatelessWidget {
                   await UiUtils.showBlurredDialoge(
                     context,
                     dialoge: BlurredDialogBox(
-                      title: 'Delete Listing',
+                      title: 'Delete Drop',
                       content: DescriptionText(
-                        'Are you sure you want to delete this item?',
+                        'Are you sure you want to delete this drop?',
                       ),
                       isAcceptContainerPush: true,
                       onAccept: () async {
-                        context.read<DeleteItemCubit>().deleteItem(itemModel.id!);
+                        context.read<DeleteItemCubit>().deleteItem(itemModel.id!).then((value) => refreshData());
                         Navigator.pop(context);
                       },
                     ),

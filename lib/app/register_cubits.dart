@@ -4,7 +4,6 @@ import 'package:tlobni/data/cubits/add_item_review_cubit.dart';
 import 'package:tlobni/data/cubits/auth/auth_cubit.dart';
 import 'package:tlobni/data/cubits/auth/authentication_cubit.dart';
 import 'package:tlobni/data/cubits/auth/delete_user_cubit.dart';
-import 'package:tlobni/data/cubits/auth/login_cubit.dart';
 import 'package:tlobni/data/cubits/category/fetch_all_categories_cubit.dart';
 import 'package:tlobni/data/cubits/category/fetch_category_cubit.dart';
 import 'package:tlobni/data/cubits/category/fetch_sub_categories_cubit.dart';
@@ -17,6 +16,8 @@ import 'package:tlobni/data/cubits/chat/load_chat_messages.dart';
 import 'package:tlobni/data/cubits/chat/make_an_offer_item_cubit.dart';
 import 'package:tlobni/data/cubits/chat/send_message.dart';
 import 'package:tlobni/data/cubits/chat/unblock_user_cubit.dart';
+import 'package:tlobni/data/cubits/claim_item_cubit.dart';
+import 'package:tlobni/data/cubits/claims_item_list_cubit.dart';
 import 'package:tlobni/data/cubits/company_cubit.dart';
 import 'package:tlobni/data/cubits/custom_field/fetch_custom_fields_cubit.dart';
 import 'package:tlobni/data/cubits/favorite/favorite_cubit.dart';
@@ -30,6 +31,7 @@ import 'package:tlobni/data/cubits/fetch_provider_cubit.dart';
 import 'package:tlobni/data/cubits/home/fetch_home_all_items_cubit.dart';
 import 'package:tlobni/data/cubits/home/fetch_home_screen_cubit.dart';
 import 'package:tlobni/data/cubits/home/fetch_section_items_cubit.dart';
+import 'package:tlobni/data/cubits/invitation_link_cubit.dart';
 import 'package:tlobni/data/cubits/item/change_my_items_status_cubit.dart';
 import 'package:tlobni/data/cubits/item/create_featured_ad_cubit.dart';
 import 'package:tlobni/data/cubits/item/delete_item_cubit.dart';
@@ -38,6 +40,7 @@ import 'package:tlobni/data/cubits/item/fetch_my_item_cubit.dart';
 import 'package:tlobni/data/cubits/item/fetch_my_promoted_items_cubit.dart';
 import 'package:tlobni/data/cubits/item/fetch_popular_items_cubit.dart';
 import 'package:tlobni/data/cubits/item/item_total_click_cubit.dart';
+import 'package:tlobni/data/cubits/item/private_spaces_cubit.dart';
 import 'package:tlobni/data/cubits/item/related_item_cubit.dart';
 import 'package:tlobni/data/cubits/item/search_item_cubit.dart';
 import 'package:tlobni/data/cubits/location/fetch_areas_cubit.dart';
@@ -46,7 +49,9 @@ import 'package:tlobni/data/cubits/location/fetch_countries_cubit.dart';
 import 'package:tlobni/data/cubits/location/fetch_states_cubit.dart';
 import 'package:tlobni/data/cubits/location/location_cubit.dart';
 import 'package:tlobni/data/cubits/my_item_review_report_cubit.dart';
+import 'package:tlobni/data/cubits/private_spaces_home_cubit.dart';
 import 'package:tlobni/data/cubits/profile_setting_cubit.dart';
+import 'package:tlobni/data/cubits/receipts/receipts_cubit.dart';
 import 'package:tlobni/data/cubits/renew_item_cubit.dart';
 import 'package:tlobni/data/cubits/report/fetch_item_report_reason_list.dart';
 import 'package:tlobni/data/cubits/report/item_report_cubit.dart';
@@ -74,16 +79,26 @@ import 'package:tlobni/data/cubits/system/user_details.dart';
 import 'package:tlobni/data/cubits/user/current_user_profile_cubit.dart';
 import 'package:tlobni/data/cubits/user_has_rated_item_cubit.dart';
 import 'package:tlobni/data/cubits/user_has_rated_user_cubit.dart';
+import 'package:tlobni/data/cubits/user_score_cubit.dart';
+import 'package:tlobni/data/cubits/users_that_claimed_item_cubit.dart';
 import 'package:tlobni/data/cubits/utility/item_edit_global.dart';
 import 'package:tlobni/data/repositories/favourites_repository.dart';
 import 'package:tlobni/data/repositories/home/home_repository.dart';
+import 'package:tlobni/data/repositories/receipts_repository.dart';
 
 class RegisterCubits {
   List<SingleChildWidget> providers = [
     BlocProvider(create: (context) => FavoriteCubit(FavoriteRepository())),
     BlocProvider(create: (context) => UpdateFavoriteCubit(FavoriteRepository())),
+    BlocProvider(create: (context) => ReceiptsCubit(ReceiptsRepository())),
     BlocProvider(create: (context) => AuthCubit()),
-    BlocProvider(create: (context) => LoginCubit()),
+    BlocProvider(create: (context) => UserScoreCubit()),
+    BlocProvider(create: (context) => ClaimItemCubit()),
+    BlocProvider(create: (context) => PrivateSpacesCubit()),
+    BlocProvider(create: (context) => ClaimsItemListCubit()),
+    BlocProvider(create: (context) => UsersThatClaimedItemCubit()),
+    BlocProvider(create: (context) => InvitationLinkCubit()),
+    BlocProvider(create: (context) => PrivateSpacesHomeCubit()),
     BlocProvider(create: (context) => SliderCubit()),
     BlocProvider(create: (context) => CompanyCubit()),
     BlocProvider(create: (context) => FetchCategoryCubit()),

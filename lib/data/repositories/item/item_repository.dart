@@ -72,7 +72,13 @@ class ItemRepository {
 
   Future<DataOutput<ItemModel>> fetchMyItems({String? getItemsWithStatus, int? page}) async {
     try {
-      Map<String, dynamic> parameters = {if (getItemsWithStatus != null) "status": getItemsWithStatus, if (page != null) Api.page: page};
+      Map<String, dynamic> parameters = {
+        if (getItemsWithStatus != null) "status": getItemsWithStatus,
+        if (page != null) Api.page: page,
+        'user_id': HiveUtils.getUserIdInt(),
+        'my_id': HiveUtils.getUserIdInt(),
+        'my_email': HiveUtils.getUserDetails().email,
+      };
 
       if (parameters['status'] == "") parameters.remove('status');
       Map<String, dynamic> response = await Api.get(
@@ -358,9 +364,11 @@ class ItemRepository {
     return response;
   }
 
-  Future<DataOutput<ItemModel>> searchItem(String query, ItemFilterModel? filter, {required int page}) async {
+  Future<DataOutput<ItemModel>> searchItem(String query, ItemFilterModel? filter, {required int page, int limit = 10}) async {
     Map<String, dynamic> parameters = {
       Api.search: query,
+      'limit': limit,
+      'offset': limit * page,
       Api.page: page,
     };
 

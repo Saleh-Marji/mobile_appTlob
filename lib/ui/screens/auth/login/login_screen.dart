@@ -130,7 +130,7 @@ class _LoginScreenState extends State<LoginScreen> {
           'email': response['user']['email'],
           'mobile': response['user']['mobile'] ?? '',
           'profile': response['user']['profile'] ?? '',
-          'type': response['user']['roles'][0]['name'],
+          'type': response['user']['type'],
           'firebaseId': response['user']['firebase_id'] ?? '',
           'fcmId': response['user']['fcm_id'] ?? '',
           'notification': response['user']['notification'] ?? 1,

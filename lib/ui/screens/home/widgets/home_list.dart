@@ -76,7 +76,9 @@ class _HomeListState extends State<HomeList> {
                             child: SizedBox(),
                             padding: EdgeInsets.all(5.2),
                             shape: CircleBorder(),
-                            color: !_controller.hasClients || _controller.page == i ? kColorSecondaryBeige : context.color.primary,
+                            color: (_controller.hasClients && _controller.page == i) || (!_controller.hasClients && i == 0)
+                                ? kColorSecondaryBeige
+                                : context.color.primary,
                           ),
                         ),
                       );

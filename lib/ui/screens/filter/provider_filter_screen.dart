@@ -107,10 +107,11 @@ class _ProviderFilterScreenState extends State<ProviderFilterScreen> {
           'business',
           'expert',
         ],
+        spacing: 5,
         valueToString: (e) => switch (e) {
           null => 'All',
-          'business' => 'Business',
-          'expert' => 'Expert',
+          'business' => 'Organization',
+          'expert' => 'Maker',
           _ => '',
         },
         selectedValue: providerType,

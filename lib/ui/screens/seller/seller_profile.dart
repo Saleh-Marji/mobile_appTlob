@@ -54,7 +54,7 @@ enum _SellerProfileScreenTab {
 
   @override
   String toString() => switch (this) {
-        _SellerProfileScreenTab.listings => 'Listings',
+        _SellerProfileScreenTab.listings => 'Drops',
         _SellerProfileScreenTab.about => 'About',
         _SellerProfileScreenTab.reviews => 'Reviews',
       };
@@ -240,7 +240,7 @@ class SellerProfileScreenState extends State<SellerProfileScreen> with SingleTic
           children: [
             Row(
               children: [
-                Expanded(child: HeadingText('Services & Experiences', fontSize: 20)),
+                Expanded(child: HeadingText('Opportunities', fontSize: 20)),
                 if (state is FetchSellerItemsSuccess)
                   Container(
                     decoration: BoxDecoration(
@@ -248,7 +248,7 @@ class SellerProfileScreenState extends State<SellerProfileScreen> with SingleTic
                       borderRadius: BorderRadius.circular(200),
                     ),
                     padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                    child: SmallText('${state.total} Listings', fontSize: 12),
+                    child: SmallText('${state.total} Opportunities', fontSize: 12),
                   )
               ],
             ),
@@ -271,8 +271,8 @@ class SellerProfileScreenState extends State<SellerProfileScreen> with SingleTic
                   children: [
                     Center(
                       child: NoDataFound(
-                        mainMessage: 'No listings yet.',
-                        subMessage: 'Stay tuned for more listings...',
+                        mainMessage: 'No opportunities yet.',
+                        subMessage: 'Stay tuned for more opportunities...',
                       ),
                     ),
                     SizedBox(height: 10),
@@ -346,7 +346,7 @@ class SellerProfileScreenState extends State<SellerProfileScreen> with SingleTic
             final list = [
               (Icons.language, user.website, true),
               (Icons.email_outlined, user.email, false),
-              (Icons.phone_outlined, user.mobile, false),
+              (Icons.phone_outlined, user.mobileWithExtension, false),
               (Icons.location_pin, user.location, false),
             ].where((e) => e.$2 != null);
             if (list.isEmpty) return SizedBox();

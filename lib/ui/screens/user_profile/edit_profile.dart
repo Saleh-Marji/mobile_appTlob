@@ -98,7 +98,6 @@ class UserProfileScreenState extends State<UserProfileScreen> {
   final TextEditingController twitterController = TextEditingController();
   final TextEditingController instagramController = TextEditingController();
   final TextEditingController tiktokController = TextEditingController();
-  final TextEditingController locationController = TextEditingController();
 
   String? city, state, country;
   double? latitude, longitude;
@@ -121,7 +120,6 @@ class UserProfileScreenState extends State<UserProfileScreen> {
     addressController.text = user.address ?? '';
     gender = user.gender;
     if (user.hasLocation) {
-      locationController.text = user.location ?? '';
       country = user.country;
       city = user.city;
       state = user.state;
@@ -1104,7 +1102,6 @@ class UserProfileScreenState extends State<UserProfileScreen> {
         validateNonEmptyField('gender', text: gender);
       }
       if (_type != UserType.client) {
-        validateNonEmptyField('location', controller: locationController);
         validateNonEmptyField('location', text: country);
         validateNonEmptyField('location', text: city);
         validateNonEmptyField('phone number', controller: phoneController);

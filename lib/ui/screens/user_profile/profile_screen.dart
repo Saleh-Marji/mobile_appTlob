@@ -367,18 +367,18 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
                   //         context: context);
                   //   },
                   // ),
-                  customTile(
-                    context,
-                    title: "favorites".translate(context),
-                    svgImagePath: AppIcons.favorites,
-                    onTap: () {
-                      UiUtils.checkUser(
-                          onNotGuest: () {
-                            Navigator.pushNamed(context, Routes.favoritesScreen, arguments: {'showBack': true});
-                          },
-                          context: context);
-                    },
-                  ),
+                  // customTile(
+                  //   context,
+                  //   title: "favorites".translate(context),
+                  //   svgImagePath: AppIcons.favorites,
+                  //   onTap: () {
+                  //     UiUtils.checkUser(
+                  //         onNotGuest: () {
+                  //           Navigator.pushNamed(context, Routes.favoritesScreen, arguments: {'showBack': true});
+                  //         },
+                  //         context: context);
+                  //   },
+                  // ),
                   // customTile(
                   //   context,
                   //   title: "faqsLbl".translate(context),
@@ -405,6 +405,12 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
                     title: "rateUs".translate(context),
                     svgImagePath: AppIcons.rateUs,
                     onTap: rateUs,
+                  ),
+                  customTile(
+                    context,
+                    title: 'Dashboard',
+                    svgImagePath: AppIcons.dashboard,
+                    onTap: onDashboardPressed,
                   ),
                   // customTile(
                   //   context,
@@ -1359,6 +1365,10 @@ class _ProfileScreenState extends State<ProfileScreen> with AutomaticKeepAliveCl
   }*/
 
   Future<void> rateUs() => _inAppReview.openStoreListing(appStoreId: Constant.iOSAppId, microsoftStoreId: 'microsoftStoreId');
+
+  void onDashboardPressed() {
+    Navigator.pushNamed(context, Routes.dashboard);
+  }
 
   void logOutConfirmWidget() {
     UiUtils.showBlurredDialoge(context,

@@ -78,6 +78,8 @@ class Api {
   static String getCategoriesApi = "get-categories";
   static String getAllCategoriesApi = "get-all-categories";
   static String getItemApi = "get-item";
+  static String getPrivateSpaces = "private-spaces";
+  static String linkUser = "link-user";
   static String getItemApiAuthenticated = "get-item-authenticated";
   static String getMyItemApi = "my-items";
   static String getNotificationListApi = "get-notification-list";
@@ -89,6 +91,7 @@ class Api {
   static String getPaymentSettingsApi = "get-payment-settings";
   static String getSystemSettingsApi = "get-system-settings";
   static String getFavoriteItemApi = "get-favourite-item";
+  static String getUserReceiptsApi = "user-receipts";
   static String updateItemStatusApi = "update-item-status";
   static String getReportReasonsApi = "get-report-reasons";
   static String addReportsApi = "add-reports";
@@ -125,6 +128,7 @@ class Api {
   static String renewItemApi = "renew-item";
   static String userHasRatedUser = 'user-has-rated-user';
   static String userHasRatedItem = 'user-has-rated-item';
+  static String usersThatClaimedItem = 'users-that-claimed-item';
 
 //Chat module apis
   static String sendMessageApi = "send-message";
@@ -265,6 +269,12 @@ class Api {
   static String forgotPassword = 'forgot-password';
 
   static String getProvider = 'get-provider';
+
+  static String getUserScoreApi = 'get-user-score';
+
+  static String checkIfClaimed = 'check-if-claimed';
+
+  static String claimItem = 'claim-item';
 
   static Future<Map<String, dynamic>> post({
     required String url,
@@ -449,7 +459,7 @@ class Api {
       }
 
       throw ApiException(e.error is SocketException ? "no-internet" : "Something went wrong with error ${e.response?.statusCode}");
-    } on ApiException catch (e) {
+    } on ApiException catch (e, s) {
       log("ApiException: ${e.errorMessage}");
       throw ApiException(e.errorMessage);
     } catch (e, st) {

@@ -5,11 +5,13 @@ import 'package:tlobni/app/app_theme.dart';
 import 'package:tlobni/app/routes.dart';
 import 'package:tlobni/data/model/item/item_model.dart';
 import 'package:tlobni/ui/screens/home/widgets/home_category_in_container_bubble.dart';
+import 'package:tlobni/ui/screens/widgets/countdown_timer.dart';
 import 'package:tlobni/ui/screens/widgets/item_pricing_container.dart';
 import 'package:tlobni/ui/widgets/buttons/regular_button.dart';
 import 'package:tlobni/ui/widgets/text/description_text.dart';
 import 'package:tlobni/ui/widgets/text/small_text.dart';
 import 'package:tlobni/utils/extensions/extensions.dart';
+import 'package:tlobni/utils/extensions/lib/duration.dart';
 import 'package:tlobni/utils/extensions/lib/iterable.dart';
 import 'package:tlobni/utils/extensions/lib/widget_iterable.dart';
 import 'package:tlobni/utils/ui_utils.dart';
@@ -36,9 +38,13 @@ class ItemContainer extends StatelessWidget {
     final name = item.name;
     final location = item.location;
     final categoryName = item.category?.name;
+    final endDate = item.finalExpirationDate;
+    final slotsTaken = item.slotsTaken;
+    final totalSlots = item.slots;
+    final isExpired = endDate != null && endDate.isBefore(DateTime.now());
 
     final tags = [
-      if (item.expirationDate != null) _daysLeftUntilExpiryString(item.expirationDate),
+      if (isExpired) _daysLeftUntilExpiryString(endDate),
       // ...[
       if (item.isForACause) 'For a Cause',
       if (item.isWomenExclusive) 'Women only',
@@ -64,7 +70,7 @@ class ItemContainer extends StatelessWidget {
                   topRight: Radius.circular(10),
                 ),
                 child: SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.85,
+                  width: small ? double.infinity : MediaQuery.of(context).size.width * 0.85,
                   child: IntrinsicWidth(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -73,28 +79,34 @@ class ItemContainer extends StatelessWidget {
                         _image(),
 
                         Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 15.0),
+                          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 15.0) - const EdgeInsets.only(top: 10),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               //provider details
                               if (user != null) _providerDetails(user),
-                              SizedBox(height: small ? 6 : 12),
+                              SizedBox(height: small ? 6 : 10),
 
                               //name
                               if (name != null) _name(name),
 
-                              SizedBox(height: small ? 10 : 20),
+                              SizedBox(height: small ? 10 : 12),
 
                               // pricing
                               if (price != null && priceType != null) _pricing(price, priceType),
 
-                              SizedBox(height: small ? 10 : 15),
+                              SizedBox(height: small ? 10 : 10),
 
                               //location
                               if (location != null) _location(location),
-                              SizedBox(height: small ? 5 : 20),
+                              SizedBox(height: small ? 5 : 12),
                               if (categoryName != null) _category(categoryName),
+                              SizedBox(height: small ? 5 : 10),
+                              if (endDate != null && !isExpired) ...[
+                                _expiresIn(endDate),
+                                SizedBox(height: small ? 5 : 10),
+                              ],
+                              if (slotsTaken != null && totalSlots != null) _slotsAvailable(slotsTaken, totalSlots)
                             ],
                           ),
                         )
@@ -113,12 +125,12 @@ class ItemContainer extends StatelessWidget {
                 right: showTypeTag ? 10 : null,
                 child: _smallFeaturedTagContainer(),
               ),
-            if (showTypeTag)
-              Positioned(
-                top: 10,
-                left: 10,
-                child: _typeTagContainer(),
-              )
+            // if (showTypeTag)
+            //   Positioned(
+            //     top: 10,
+            //     left: 10,
+            //     child: _typeTagContainer(),
+            //   )
           ] else
             Positioned(
               right: 10,
@@ -157,7 +169,7 @@ class ItemContainer extends StatelessWidget {
 
   Widget _image() => UiUtils.getImage(
         item.image ?? "",
-        height: small ? 130 : 200,
+        height: small ? 130 : 150,
         fit: BoxFit.cover,
       );
 
@@ -165,7 +177,7 @@ class ItemContainer extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Builder(builder: (context) {
-            double size = small ? 20 : 30;
+            double size = small ? 20 : 25;
             return Container(
               height: size,
               width: size,
@@ -249,6 +261,7 @@ class ItemContainer extends StatelessWidget {
     if (diff.isNegative) {
       return _itemTagContainer(Colors.red.shade800, Color.lerp(Colors.red.shade50, Colors.white, 0.5)!, 'Expired');
     }
+    return null;
     return '${max(0, diff.inDays)} Days Left';
   }
 
@@ -279,5 +292,56 @@ class ItemContainer extends StatelessWidget {
         'service' => 'Service',
         'experience' => 'Experience',
         _ => '',
+      });
+
+  Widget _expiresIn(DateTime endDate) => Builder(builder: (context) {
+        return CountdownTimer(
+            endDateTime: endDate,
+            refreshRateDuration: Duration(seconds: 1),
+            builder: (remaining) => SmallText('Ends In ${remaining.toCountdownString()}', color: Colors.red));
+      });
+
+  Widget _slotsAvailable(int slotsTaken, int totalSlots) => Builder(builder: (context) {
+        int slotsAvailable = totalSlots - slotsTaken;
+        if (small) {
+          return IntrinsicHeight(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(child: SmallText('$slotsAvailable slots left')),
+                SizedBox(height: 2),
+                LinearProgressIndicator(
+                  backgroundColor: kColorSecondaryBeige,
+                  valueColor: AlwaysStoppedAnimation(kColorNavyBlue),
+                  minHeight: 3,
+                  value: slotsAvailable / totalSlots,
+                )
+              ],
+            ),
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Expanded(child: SmallText('Slots Available:')),
+                SmallText(
+                  '$slotsAvailable of $totalSlots',
+                  color: kColorSecondaryBeige,
+                  weight: FontWeight.w600,
+                ),
+              ],
+            ),
+            SizedBox(height: 5),
+            LinearProgressIndicator(
+              backgroundColor: kColorSecondaryBeige,
+              valueColor: AlwaysStoppedAnimation(kColorNavyBlue),
+              value: slotsAvailable / totalSlots,
+              minHeight: 5,
+              borderRadius: BorderRadius.circular(60),
+            )
+          ],
+        );
       });
 }

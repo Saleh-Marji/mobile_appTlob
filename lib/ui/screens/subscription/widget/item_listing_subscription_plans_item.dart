@@ -278,7 +278,7 @@ class _ItemListingSubscriptionPlansItemState extends State<ItemListingSubscripti
                             buttonColor: widget.model.isActive! ? context.color.textLightColor.brighten(300) : context.color.territoryColor,
                             textColor: kColorSecondaryBeige,
                             buttonTitle:
-                                widget.model.isActive ?? false ? "purchased".translate(context) : "purchaseThisPackage".translate(context),
+                                (widget.model.isActive ?? false) ? "purchased".translate(context) : "purchaseThisPackage".translate(context),
 
                             //TODO: change title to Your Current Plan according to condition
                             outerPadding: const EdgeInsets.all(20))

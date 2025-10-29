@@ -4,6 +4,52 @@ import 'package:tlobni/data/model/category_model.dart';
 import 'package:tlobni/data/model/custom_field/custom_field_model.dart';
 import 'package:tlobni/data/model/seller_ratings_model.dart';
 
+enum EndTimerOption {
+  h24,
+  h48,
+  h72;
+
+  int toHours() {
+    return switch (this) {
+      h24 => 24,
+      h48 => 48,
+      h72 => 72,
+    };
+  }
+
+  @override
+  String toString() => '${toHours()} Hours';
+
+  static EndTimerOption? fromString(json) {
+    for (var value in values) {
+      if (value.name == json) return value;
+    }
+    return null;
+  }
+}
+
+enum ItemAudience {
+  public,
+  employees,
+  students,
+  clients;
+
+  @override
+  String toString() => switch (this) {
+        public => 'Public',
+        employees => 'Employees',
+        students => 'Students',
+        clients => 'Clients',
+      };
+
+  static ItemAudience? fromString(String? json) {
+    for (var value in values) {
+      if (value.name == json) return value;
+    }
+    return null;
+  }
+}
+
 class ItemModel {
   static const List<String> locationTypes = [
     'client_location',
@@ -68,6 +114,12 @@ class ItemModel {
   List<UserRatings>? review;
   String? sellerName;
   String? sellerType;
+  DateTime? itemDate;
+  String? itemTime;
+  EndTimerOption? endTimerOption;
+  ItemAudience? audience;
+  int? slots;
+  int? slotsTaken;
 
   double? get latitude => _latitude;
 
@@ -140,6 +192,12 @@ class ItemModel {
       this.review,
       this.isPurchased,
       this.sellerName,
+      this.itemDate,
+      this.itemTime,
+      this.endTimerOption,
+      this.audience,
+      this.slots,
+      this.slotsTaken,
       this.sellerType}) {
     this.latitude = latitude;
     this.longitude = longitude;
@@ -191,6 +249,12 @@ class ItemModel {
       List<UserRatings>? review,
       String? sellerName,
       String? forACauseText,
+      DateTime? dateTime,
+      String? itemTime,
+      EndTimerOption? endTimerOption,
+      ItemAudience? audience,
+      int? slots,
+      int? slotsTaken,
       String? sellerType}) {
     return ItemModel(
       id: id ?? this.id,
@@ -240,6 +304,12 @@ class ItemModel {
       review: review ?? this.review,
       sellerName: sellerName ?? this.sellerName,
       sellerType: sellerType ?? this.sellerType,
+      itemDate: dateTime ?? this.itemDate,
+      itemTime: itemTime ?? this.itemTime,
+      endTimerOption: endTimerOption ?? this.endTimerOption,
+      audience: audience ?? this.audience,
+      slots: slots ?? this.slots,
+      slotsTaken: slotsTaken ?? this.slotsTaken,
     );
   }
 
@@ -314,6 +384,23 @@ class ItemModel {
     city = json['city'];
     state = json['state'];
     country = json['country'];
+    slotsTaken = json['slots_taken'];
+
+    if (json['item_date'] != null) {
+      try {
+        itemDate = DateTime.parse(json['item_date']);
+      } catch (e) {
+        itemDate = null;
+      }
+    }
+
+    endTimerOption = EndTimerOption.fromString(json['end_timer_option']);
+
+    itemTime = json['item_time'];
+
+    slots = json['slots'];
+
+    audience = ItemAudience.fromString(json['audience']);
 
     // Parse location_type field
     if (json['location_type'] != null) {
@@ -386,6 +473,8 @@ class ItemModel {
     return '$city, $country';
   }
 
+  int get slotsAvailable => (slots ?? 0) - (slotsTaken ?? 0);
+
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = <String, dynamic>{};
     data['id'] = id;
@@ -420,6 +509,12 @@ class ItemModel {
     data['all_category_ids'] = allCategoryIds;
     data['rejected_reason'] = rejectedReason;
     data['is_purchased'] = isPurchased;
+    data['item_date'] = itemDate;
+    data['item_time'] = itemTime;
+    data['end_timer_option'] = endTimerOption?.name;
+    data['audience'] = audience?.name;
+    data['slots'] = slots;
+    data['slots_taken'] = slotsTaken;
     if (review != null) {
       data['review'] = review!.map((v) => v.toJson()).toList();
     }
@@ -456,6 +551,10 @@ class ItemModel {
     }
     return data;
   }
+
+  DateTime? get finalExpirationDate => expirationDate == null || expirationTime == null
+      ? null
+      : expirationDate!.add(Duration(hours: int.parse(expirationTime!.split(':')[0]), minutes: int.parse(expirationTime!.split(':')[1])));
 
   @override
   String toString() {
@@ -495,6 +594,7 @@ class User {
   String? gender;
   String? countryCode;
   bool? enableNotifications;
+  int? scoreValue;
 
   User({
     this.id,
@@ -527,6 +627,7 @@ class User {
     this.showPersonalDetails,
     this.categories,
     this.averageRating,
+    this.scoreValue,
     this.gender,
     this.isFeatured,
     this.enableNotifications,
@@ -559,6 +660,7 @@ class User {
     updatedAt = json['updated_at'];
     countryCode = json['country_code'];
     isVerified = json['is_verified'];
+    scoreValue = json['score']?['score'] ?? int.tryParse(json['score_value']?.toString() ?? '');
     latitude = json['latitude']?.toDouble();
     longitude = json['longitude']?.toDouble();
 
@@ -585,6 +687,8 @@ class User {
   bool get hasLocation => country != null && city != null;
 
   String? get location => hasLocation ? '$city, $country' : null;
+
+  String? get mobileWithExtension => mobile != null ? '${countryCode == null ? '' : '+$countryCode '}$mobile' : null;
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = <String, dynamic>{};
@@ -613,6 +717,7 @@ class User {
     data['country'] = country;
     data['city'] = city;
     data['state'] = state;
+    data['score_value'] = scoreValue;
     data['show_personal_details'] = showPersonalDetails;
     data['categories'] = categoriesIds?.join(',');
     data['total_reviews'] = totalReviews;

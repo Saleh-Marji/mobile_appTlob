@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(flutter analyze:*)"
+      "Bash(flutter analyze:*)",
+      "Read(//c/Users/Saleh/Downloads/Telegram Desktop/**)",
+      "Read(//d/programming/projects/fadi_kahil/tlobni/code/**)"
     ],
     "deny": []
   }

@@ -30,15 +30,15 @@ class AppSettings {
   static const String androidPackageName = 'com.tlobni.app';
   static const String shareAppText = "Share this App";
 
-  // static const String demoUrl = "http://192.168.0.103:8000";
-  static const String demoUrl = "https://dashboard.tlobni.com";
+  // static String get demoUrl => "http://192.168.0.106:8000";
+  static String get demoUrl => "https://dashboard.tlobni.com";
 
   ///API Setting
 
   static const int apiDataLoadLimit = 20;
   static const int maxCategoryShowLengthInHomeScreen = 5;
 
-  //TODO: Change to demo url when releasingA
+  //TODO: Change to demo url when releasing
   static final String baseUrl = "${HelperUtils.checkHost(demoUrl)}api/"; //don't change this
 
   static const int hiddenAPIProcessDelay = 1;

@@ -37,7 +37,7 @@ class FormDropdown<T> extends StatelessWidget {
       enableSearch: allowSearch,
       hintText: hint,
       enableFilter: allowSearch,
-      inputDecorationTheme: InputDecorationTheme(
+      inputDecorationTheme: InputDecorationThemeData(
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide: BorderSide(color: borderColor),

@@ -132,6 +132,8 @@ class ProviderHomeScreenContainer extends StatelessWidget {
                       ),
                       SizedBox(width: 5),
                       SmallText('(${user.totalReviews ?? 0})', fontSize: 14),
+                      SizedBox(width: 5),
+                      SmallText('IS: ${user.scoreValue ?? 0}', fontSize: 14),
                     ],
                   ),
                   if (user.hasLocation) ...[

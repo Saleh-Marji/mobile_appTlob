@@ -24,7 +24,7 @@ class GooglePlaceRepository {
         List<GooglePlaceModel> places = [];
 
         for (var prediction in predictions) {
-          String city = prediction['structured_formatting']['main_text'] ?? '';
+          String city = prediction['terms'][0]['value'] ?? '';
           String description = prediction['description'] ?? '';
           String placeId = prediction['place_id'] ?? '';
 
@@ -38,6 +38,8 @@ class GooglePlaceRepository {
               state = parts[parts.length - 2].trim();
               country = parts[parts.length - 1].trim();
             }
+          } else if (prediction['terms'].length > 1) {
+            country = prediction['terms'][1]['value'];
           }
 
           places.add(GooglePlaceModel(
